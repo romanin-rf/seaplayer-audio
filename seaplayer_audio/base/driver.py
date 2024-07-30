@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from ..types import SamplerateType, DType, SAMPLERATE_VALUES, DTYPE_VALUES
 from .exception import ErrorBase, ErrorTextType
 
@@ -15,7 +16,7 @@ class DriverIsNotRunningError(ErrorBase):
         yield "The driver is not running!"
 
 # ! Driver Base Class
-class DriverBase:
+class DriverBase(ABC):
     __driver_name__: str        = 'base'
     __driver_version__: str     = '1.0.0'
     
@@ -33,32 +34,39 @@ class DriverBase:
     # ! Propertyes
     
     @property
+    @abstractmethod
     def samplerate(self) -> SamplerateType:
         return self.__samplerate
     
     @property
+    @abstractmethod
     def dtype(self) -> DType:
         return self.__dtype
     
     @property
+    @abstractmethod
     def running(self) -> bool:
         return False
     
     # ! Initialization
     
+    @abstractmethod
     def __driver_loop__(self) -> None:
         pass
     
     # ! Functions
     
+    @abstractmethod
     def start(self) -> None:
-        raise NotImplementedError()
+        pass
     
+    @abstractmethod
     def stop(self) -> None:
-        raise NotImplementedError()
+        pass
     
+    @abstractmethod
     def send(self, *args, **kwargs) -> None:
-        raise NotImplementedError()
+        pass
     
     # ! Spetific functions
     # ...
