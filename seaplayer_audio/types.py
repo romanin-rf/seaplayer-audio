@@ -1,4 +1,10 @@
-from typing_extensions import TypeAlias, Literal, Union, Generator, Any
+from typing_extensions import (
+    TypeVar, TypeAlias, Literal, Union, Generator, Any
+)
+
+# ! Type Vars
+
+T = TypeVar('T')
 
 # ! Spetific Types
 

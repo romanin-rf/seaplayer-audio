@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
-from ..types import SamplerateType, DType, SAMPLERATE_VALUES, DTYPE_VALUES
+from typing_extensions import Generic
+from ..types import SamplerateType, DType, SAMPLERATE_VALUES, DTYPE_VALUES, T
 from .exception import ErrorBase, ErrorTextType
 
 # ! Exception
@@ -16,9 +17,9 @@ class DriverIsNotRunningError(ErrorBase):
         yield "The driver is not running!"
 
 # ! Driver Base Class
-class DriverBase(ABC):
+class DriverBase(ABC, Generic[T]):
     __driver_name__: str        = 'base'
-    __driver_version__: str     = '1.0.0'
+    __driver_version__: str     = '0.1.0'
     
     def __init__(
         self,
@@ -58,14 +59,26 @@ class DriverBase(ABC):
     
     @abstractmethod
     def start(self) -> None:
+        """Starting the driver."""
         pass
     
     @abstractmethod
     def stop(self) -> None:
+        """Stopping the driver operation."""
         pass
     
     @abstractmethod
-    def send(self, *args, **kwargs) -> None:
+    def send(self, data: T, *args, **kwargs) -> None:
+        """Sending data (the entire implementation will be in a class inherited from this class).
+
+        Args:
+            data (T): It can be either bytes or an array of values
+        """
+        pass
+    
+    @abstractmethod
+    def clear(self) -> None:
+        """Clearing (the entire implementation will be in a class inherited from this class)."""
         pass
     
     # ! Spetific functions
