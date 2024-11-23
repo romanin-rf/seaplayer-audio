@@ -1,28 +1,18 @@
+from pathlib import Path
 from typing_extensions import (
-    TypeVar, TypeAlias, Literal, Union, Generator, Any
+    Literal, Union,
+    TypeAlias
 )
 
-# ! Type Vars
+# ! IO Types
 
-T = TypeVar('T')
+FilePathType: TypeAlias     = Union[str, Path]
+SeekWhenceType: TypeAlias   = Literal[0, 1, 2]
 
-# ! Spetific Types
+# ! Audio Settings Types
 
-ErrorTextType: TypeAlias            = Generator[str, Any, None]
+Channels: TypeAlias         = Literal[1, 2]
+Samplerate: TypeAlias       = Literal[8000, 11025, 16000, 22050, 32000, 44100, 48000, 96000, 192000]
+DType: TypeAlias            = Literal['int8', 'int16', 'int32', 'int64', 'int128', 'int256', 'float16', 'float32', 'float64', 'float80', 'float96', 'float128', 'float256']
 
-# ! Audio Types
-
-SamplerateType: TypeAlias           = Literal[8000, 11025, 16000, 22050, 32000, 44100, 48000, 96000, 192000]
-"""A type with all possible `samplerate` options."""
-SAMPLERATE_VALUES                   = (8000, 11025, 16000, 22050, 32000, 44100, 48000, 96000, 192000)
-"""A constant with the listed possible `samplerate` options."""
-
-LiteralIntDType: TypeAlias          = Literal['int8', 'int16', 'int32', 'int64', 'int128', 'int256']
-"""Literals of possible `dtype` values for `int`."""
-LiteralFloatDType: TypeAlias        = Literal['float16', 'float32', 'float64', 'float80', 'float96', 'float128', 'float256']
-"""Literals of possible `dtype` values for `float`."""
-DType: TypeAlias                    = Union[LiteralIntDType, LiteralFloatDType]
-"""Literals of possible `dtype` values."""
-DTYPE_INT_VALUES                    = ('int8', 'int16', 'int32', 'int64', 'int128', 'int256')
-DTYPE_FLOAT_VALUES                  = ('float16', 'float32', 'float64', 'float80', 'float96', 'float128', 'float256')
-DTYPE_VALUES                        = (*DTYPE_INT_VALUES, *DTYPE_FLOAT_VALUES)
+SupportsDType: TypeAlias   = Literal['int16', 'int32', 'float32', 'float64']
