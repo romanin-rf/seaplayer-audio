@@ -7,25 +7,19 @@ from PIL import Image
 from io import BytesIO
 # * Typing
 from types import TracebackType
-from typing_extensions import Optional, Type
+from typing_extensions import Optional, Type, Any
 # * Local Imports
 from ..base import AsyncAudioSourceBase, AudioSourceBase, AudioSourceMetadata
-from ..types import FilePathType, SupportsDType, SeekWhenceType
-from ..filesignatures import SUPPORTED_AUDIOFILE_SIGNATURES
-from ..exceptions import NotSupportedAudioFormat
+from ..types import (
+    FilePathType,
+    SeekWhenceType,
+    AudioDType, AudioSamplerate, AudioChannels, AudioFormat, AudioSubType, AudioEndians
+)
 from ..functions import check_string
 
 # ^ File Audio Source (sync)
 
 class FileAudioSource(AudioSourceBase):
-    @staticmethod
-    def _check_signature(__filepath: str):
-        with open(__filepath, 'rb') as file:
-            data = file.read(SUPPORTED_AUDIOFILE_SIGNATURES.max_size)
-        if (signature:=SUPPORTED_AUDIOFILE_SIGNATURES.check(data)) is None:
-            raise NotSupportedAudioFormat(f'Signature of an not supported audio format: {data!r}.')
-        return signature
-    
     @staticmethod
     def _get_mutagen_info(__filepath: str) -> Optional[mutagen.FileType]:
         try: return mutagen.File(__filepath)
@@ -58,10 +52,19 @@ class FileAudioSource(AudioSourceBase):
             icon=FileAudioSource._get_image(__io.name)
         )
     
-    def __init__(self, filepath: FilePathType) -> None:
+    def __init__(
+        self,
+        filepath: FilePathType,
+        samplerate: Optional[AudioSamplerate]=None,
+        channels: Optional[AudioChannels]=None,
+        subtype:  Optional[AudioSubType]=None,
+        endian: Optional[AudioEndians]=None,
+        format: Optional[AudioFormat]=None,
+        closefd: bool=False
+    ) -> None:
+        self.closefd = closefd
         self.name = os.path.abspath(str(filepath))
-        self.signature = self._check_signature(self.name)
-        self._io = sf.SoundFile(self.name, 'r')
+        self._io = sf.SoundFile(self.name, 'r', samplerate, channels, subtype, endian, format)
         self.info = self._get_info(self._io)
     
     # ^ Magic Methods
@@ -75,7 +78,8 @@ class FileAudioSource(AudioSourceBase):
         exc_val: Optional[BaseException],
         exc_tb: Optional[TracebackType]
     ) -> None:
-        self.close()
+        if self.closefd:
+            self.close()
     
     # ^ Propertyes
     
@@ -96,7 +100,7 @@ class FileAudioSource(AudioSourceBase):
     def read(
         self,
         frames: int=-1,
-        dtype: SupportsDType='int16',
+        dtype: AudioDType='int16',
         always_2d: bool=False,
         **extra: object
     ) -> np.ndarray:
@@ -113,12 +117,12 @@ class FileAudioSource(AudioSourceBase):
         Returns:
             np.ndarray: If out is specified, the data is written into the given array instead of creating a new array. In this case, the arguments *dtype* and *always_2d* are silently ignored! If *frames* is not given, it is obtained from the length of out.
         """
-        if dtype not in SupportsDType.__args__:
-            raise ValueError(f"{dtype=}")
+        if dtype not in AudioDType.__args__:
+            raise ValueError(f"Bad value: {dtype=}.")
         return self._io.read(frames, dtype, always_2d, **extra)
     
     def seek(self, frames: int, whence: SeekWhenceType=0) -> int:
-        """Set the read/write position.
+        """Set the read position.
 
         Args:
             frames (int): The frame index or offset to seek.
@@ -128,11 +132,19 @@ class FileAudioSource(AudioSourceBase):
             ValueError: Invalid `whence` argument is specified.
 
         Returns:
-            int: The new absolute read/write position in frames.
+            int: The new absolute read position in frames.
         """
         if whence not in SeekWhenceType.__args__:
-            raise ValueError(f"{whence=}")
+            raise ValueError(f"Bad value: {whence=}.")
         return self._io.seek(frames, whence)
+    
+    def tell(self) -> int:
+        """Return the current read position.
+
+        Returns:
+            int: Current position.
+        """
+        return self._io.tell()
     
     def close(self) -> None:
         """Close the file. Can be called multiple times."""
