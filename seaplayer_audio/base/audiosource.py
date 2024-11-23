@@ -2,7 +2,7 @@ import datetime
 from PIL import Image
 from io import IOBase
 from dataclasses import dataclass
-from typing_extensions import Optional, NoReturn, deprecated
+from typing_extensions import Any, Iterable, Optional, NoReturn, deprecated
 
 # ! Audio Source Types
 
@@ -23,19 +23,51 @@ class AudioSourceMetadata:
 class AudioSourceBase(IOBase):
     """Base class for working with audio sources (sync)."""
     
-    @deprecated('NOT IMPLEMENTED')
+    def __new__(cls, *args, **kwargs):
+        instance = super().__new__(cls)
+        delattr(instance, 'readline')
+        delattr(instance, 'readlines')
+        return instance
+    
+    @deprecated('!!! NOT IMPLEMENTED !!!')
     def __iter__(self) -> NoReturn:
+        """!!! NOT IMPLEMENTED !!!"""
         raise NotImplementedError
     
-    @deprecated('NOT IMPLEMENTED')
+    @deprecated('!!! NOT IMPLEMENTED !!!')
     def __next__(self) -> NoReturn:
+        """!!! NOT IMPLEMENTED !!!"""
         raise NotImplementedError
     
     def writable(self) -> bool:
         return False
     
-    @deprecated('NOT IMPLEMENTED')
+    @deprecated('!!! NOT IMPLEMENTED !!!')
     def write(self, *args, **kwargs) -> NoReturn:
+        """!!! NOT IMPLEMENTED !!!"""
+        raise NotImplementedError
+    
+    @deprecated('!!! NOT IMPLEMENTED !!!')
+    def writelines(self, lines: Iterable[Any]) -> NoReturn:
+        """!!! NOT IMPLEMENTED !!!"""
+        raise NotImplementedError
+    
+    @deprecated('!!! NOT IMPLEMENTED !!!')
+    def truncate(self, size: Optional[int]=None) -> NoReturn:
+        """!!! NOT IMPLEMENTED !!!"""
+        raise NotImplementedError
+    
+    def isatty(self) -> bool:
+        return False
+    
+    @deprecated('!!! NOT IMPLEMENTED !!!')
+    def flush(self) -> NoReturn:
+        """!!! NOT IMPLEMENTED !!!"""
+        raise NotImplementedError
+    
+    @deprecated('!!! NOT IMPLEMENTED !!!')
+    def fileno(self) -> NoReturn:
+        """!!! NOT IMPLEMENTED !!!"""
         raise NotImplementedError
 
 # ! Audio Source Class (async)
@@ -43,17 +75,43 @@ class AudioSourceBase(IOBase):
 class AsyncAudioSourceBase(AudioSourceBase):
     """Base class for working with audio sources (async)."""
     
-    @deprecated('NOT IMPLEMENTED')
+    @deprecated('!!! NOT IMPLEMENTED !!!')
     async def __aiter__(self) -> NoReturn:
+        """!!! NOT IMPLEMENTED !!!"""
         raise NotImplementedError
     
-    @deprecated('NOT IMPLEMENTED')
+    @deprecated('!!! NOT IMPLEMENTED !!!')
     async def __anext__(self) -> NoReturn:
+        """!!! NOT IMPLEMENTED !!!"""
         raise NotImplementedError
     
     async def writable(self) -> bool:
         return False
     
-    @deprecated('NOT IMPLEMENTED')
+    @deprecated('!!! NOT IMPLEMENTED !!!')
     async def write(self, *args, **kwargs) -> NoReturn:
+        """!!! NOT IMPLEMENTED !!!"""
+        raise NotImplementedError
+    
+    @deprecated('!!! NOT IMPLEMENTED !!!')
+    async def writelines(self, lines: Iterable[Any]) -> NoReturn:
+        """!!! NOT IMPLEMENTED !!!"""
+        raise NotImplementedError
+    
+    @deprecated('!!! NOT IMPLEMENTED !!!')
+    async def truncate(self, size = ...) -> NoReturn:
+        """!!! NOT IMPLEMENTED !!!"""
+        raise NotImplementedError
+    
+    async def isatty(self) -> bool:
+        return False
+    
+    @deprecated('!!! NOT IMPLEMENTED !!!')
+    async def flush(self) -> NoReturn:
+        """!!! NOT IMPLEMENTED !!!"""
+        raise NotImplementedError
+    
+    @deprecated('!!! NOT IMPLEMENTED !!!')
+    async def fileno(self) -> NoReturn:
+        """!!! NOT IMPLEMENTED !!!"""
         raise NotImplementedError
