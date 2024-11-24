@@ -1,4 +1,5 @@
 import os
+import asyncio
 import mutagen
 import datetime
 import numpy as np
@@ -6,8 +7,9 @@ import soundfile as sf
 from PIL import Image
 from io import BytesIO
 # * Typing
+#from enum import Flag, auto
 from types import TracebackType
-from typing_extensions import Optional, Type, Any
+from typing_extensions import Optional, Type
 # * Local Imports
 from ..base import AsyncAudioSourceBase, AudioSourceBase, AudioSourceMetadata
 from ..types import (
@@ -15,7 +17,7 @@ from ..types import (
     SeekWhenceType,
     AudioDType, AudioSamplerate, AudioChannels, AudioFormat, AudioSubType, AudioEndians
 )
-from ..functions import check_string
+from ..functions import check_string, aiorun
 
 # ^ File Audio Source (sync)
 
@@ -89,10 +91,10 @@ class FileAudioSource(AudioSourceBase):
     
     # ^ IO Methods Tests
     
-    def seekable(self):
+    def seekable(self) -> bool:
         return self._io.seekable() and not self.closed
     
-    def readable(self):
+    def readable(self) -> bool:
         return not self.closed
     
     # ^ IO Methods Action
@@ -149,3 +151,58 @@ class FileAudioSource(AudioSourceBase):
     def close(self) -> None:
         """Close the file. Can be called multiple times."""
         return self._io.close()
+
+
+class AsyncFileAudioSource(AsyncAudioSourceBase, FileAudioSource):
+    def __init__(
+        self,
+        filepath: FilePathType,
+        samplerate: Optional[AudioSamplerate]=None,
+        channels: Optional[AudioChannels]=None,
+        subtype:  Optional[AudioSubType]=None,
+        endian: Optional[AudioEndians]=None,
+        format: Optional[AudioFormat]=None,
+        closefd: bool=False,
+        loop: Optional[asyncio.AbstractEventLoop]=None
+    ) -> None:
+        self.closefd = closefd
+        self.loop = loop or asyncio.get_running_loop()
+        self.name = os.path.abspath(str(filepath))
+        self._io = sf.SoundFile(self.name, 'r', samplerate, channels, subtype, endian, format)
+        self.info = self._get_info(self._io)
+    
+    async def __aenter__(self):
+        return self
+    
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType]
+    ) -> None:
+        if self.closefd:
+            await self.close()
+
+    async def seekable(self):
+        return super().seekable()
+    
+    async def readable(self):
+        return not self.closed
+
+    async def read(
+        self,
+        frames: int=-1,
+        dtype: AudioDType='int16',
+        always_2d: bool=False,
+        **extra: object
+    ) -> np.ndarray:
+        return await aiorun(self.loop, super().read, frames, dtype, always_2d, **extra)
+
+    async def seek(self, frames: int, whence: SeekWhenceType=0) -> int:
+        return await aiorun(self.loop, super().seek, frames, whence)
+    
+    async def tell(self) -> int:
+        return await aiorun(self.loop, super().tell)
+    
+    async def close(self):
+        return await aiorun(self.loop, super().close)

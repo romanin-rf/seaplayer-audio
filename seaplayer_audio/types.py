@@ -1,8 +1,18 @@
 from pathlib import Path
 from typing_extensions import (
+    Coroutine, Awaitable, Callable,
     Literal, Union,
-    TypeAlias
+    TypeVar, TypeAlias
 )
+
+# ! Async Types
+
+ResultType = TypeVar('ResultType')
+MethodType: TypeAlias = Union[
+    Awaitable[ResultType],
+    Callable[..., Coroutine[None, None, ResultType]],
+    Callable[..., ResultType]
+]
 
 # ! Types
 
