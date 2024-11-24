@@ -6,7 +6,7 @@ from typing_extensions import (
     Optional, Union,
     Awaitable, Callable, Coroutine
 )
-from .types import ResultType
+from .types import ResultType, MethodType
 
 # ! File Works Methods
 
@@ -24,7 +24,7 @@ def check_string(value: Optional[str]) -> Optional[str]:
 
 # ! Async Wrrapper
 
-def run_awaitable(
+def _aiorun_awaitable(
     method: Awaitable[ResultType],
     kwargs: Dict[str, object], *args
 ) -> ResultType:
@@ -33,14 +33,14 @@ def run_awaitable(
         return await method
     return asyncio.run(do_work())
 
-def run_coroutine(
+def _aiorun_coroutine(
     method: Callable[..., Coroutine[None, None, ResultType]],
     kwargs: Dict[str, object], *args
 ) -> ResultType:
     """Await coroutine."""
-    return run_awaitable(method(*args, **kwargs))
+    return _aiorun_awaitable(method(*args, **kwargs))
 
-def run_callable(
+def _aiorun_callable(
     method: Callable[..., ResultType],
     kwargs: Dict[str, object], *args
 ) -> ResultType:
@@ -49,19 +49,15 @@ def run_callable(
 
 async def aiorun(
     loop: asyncio.AbstractEventLoop,
-    method: Union[
-        Awaitable[ResultType],
-        Callable[..., Coroutine[None, None, ResultType]],
-        Callable[..., ResultType]
-    ],
+    method: MethodType,
     *args, **kwargs
 ) -> ResultType:
     if inspect.iscoroutinefunction(method):
-        runner = run_coroutine
-    elif callable(method):
-        runner = run_callable
+        runner = _aiorun_coroutine
     elif inspect.isawaitable(method):
-        runner = run_awaitable
+        runner = _aiorun_awaitable
+    elif callable(method):
+        runner = _aiorun_callable
     else:
         raise RuntimeError
     assert loop is not None

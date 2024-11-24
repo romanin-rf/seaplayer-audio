@@ -1,7 +1,7 @@
 import os
 import asyncio
 import mutagen
-import datetime
+import dateutil.parser
 import numpy as np
 import soundfile as sf
 from PIL import Image
@@ -22,6 +22,8 @@ from ..functions import check_string, aiorun
 # ^ File Audio Source (sync)
 
 class FileAudioSource(AudioSourceBase):
+    __repr_attrs__ = ('name', 'samplerate', 'format', 'subtype', 'info', 'closefd')
+    
     @staticmethod
     def _get_mutagen_info(__filepath: str) -> Optional[mutagen.FileType]:
         try: return mutagen.File(__filepath)
@@ -41,7 +43,10 @@ class FileAudioSource(AudioSourceBase):
     def _get_info(__io: sf.SoundFile) -> AudioSourceMetadata:
         metadata = __io.copy_metadata()
         year = check_string(metadata.get('date', None))
-        date = datetime.datetime(int(year)) if (year is not None) else None
+        try:
+            date = dateutil.parser.parse(year) if (year is not None) else None
+        except:
+            date = None
         return AudioSourceMetadata(
             title=check_string(metadata.get('title', None)),
             artist=check_string(metadata.get('artist', None)),
@@ -83,7 +88,22 @@ class FileAudioSource(AudioSourceBase):
         if self.closefd:
             self.close()
     
+    def __del__(self) -> None:
+        self.close()
+    
     # ^ Propertyes
+    
+    @property
+    def samplerate(self) -> AudioSamplerate:
+        return self._io.samplerate
+    
+    @property
+    def format(self) -> AudioFormat:
+        return self._io.format
+    
+    @property
+    def subtype(self) -> AudioSubType:
+        return self._io.subtype
     
     @property
     def closed(self) -> bool:
@@ -170,6 +190,9 @@ class AsyncFileAudioSource(AsyncAudioSourceBase, FileAudioSource):
         self.name = os.path.abspath(str(filepath))
         self._io = sf.SoundFile(self.name, 'r', samplerate, channels, subtype, endian, format)
         self.info = self._get_info(self._io)
+    
+    def __del__(self) -> None:
+        super().close()
     
     async def __aenter__(self):
         return self
