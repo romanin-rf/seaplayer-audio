@@ -15,9 +15,6 @@ sounddevice = "^0.5.1"
 soundfile = "^0.12.1"
 
 [tool.pytest.ini_options]
-log_cli = true
-log_cli_level = "NOTSET"
-log_cli_format = "%(asctime)s [%(levelname)8s] %(message)s"
 pythonpath = [
     ".", "./tests"
 ]
