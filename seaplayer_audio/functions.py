@@ -3,7 +3,7 @@ import asyncio
 import inspect
 from typing_extensions import (
     Dict,
-    Optional, Union,
+    Optional,
     Awaitable, Callable, Coroutine
 )
 from ._types import ResultType, MethodType

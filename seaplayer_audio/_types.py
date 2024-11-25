@@ -1,6 +1,6 @@
 from pathlib import Path
 from typing_extensions import (
-    Tuple, Any,
+    Tuple,
     Coroutine, Awaitable, Callable,
     Literal, Union,
     TypeVar, TypeAlias
@@ -25,7 +25,6 @@ DType: TypeAlias = Literal[
 # ! IO Types
 
 FilePathType: TypeAlias     = Union[str, Path]
-SeekWhenceType: TypeAlias   = Literal[0, 1, 2]
 
 # ! Audio Types
 

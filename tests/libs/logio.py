@@ -65,3 +65,7 @@ class Logger:
     
     def critical(self, msg: str, *, with_new_line: bool=False) -> None:
         return self.__log('CRITICAL', msg, with_new_line)
+    
+    def rule(self, title: str) -> None:
+        self.console.print()
+        self.console.rule(title)

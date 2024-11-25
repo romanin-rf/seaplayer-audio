@@ -8,13 +8,12 @@ from PIL import Image
 from io import BytesIO
 # * Typing
 #from enum import Flag, auto
-from types import TracebackType, SimpleNamespace
+from types import TracebackType
 from typing_extensions import Optional, Type
 # * Local Imports
 from ..base import AsyncAudioSourceBase, AudioSourceBase, AudioSourceMetadata
 from .._types import (
     FilePathType,
-    SeekWhenceType,
     AudioDType, AudioSamplerate, AudioChannels, AudioFormat, AudioSubType, AudioEndians
 )
 from ..functions import check_string, aiorun
@@ -156,11 +155,20 @@ class FileAudioSource(AudioSourceBase):
         Returns:
             np.ndarray: If out is specified, the data is written into the given array instead of creating a new array. In this case, the arguments *dtype* and *always_2d* are silently ignored! If *frames* is not given, it is obtained from the length of out.
         """
-        if dtype not in AudioDType.__args__:
-            raise ValueError(f"Bad value: {dtype=}.")
         return self.sfio.read(frames, dtype, always_2d, **extra)
     
-    def seek(self, frames: int, whence: SeekWhenceType=0) -> int:
+    def readline(self, seconds: int=-1, dtype: AudioDType='int16', always_2d: bool=False, **extra: object):
+        """Read from the file and return data (*1 second*) as NumPy array.
+
+        Args:
+            seconds (int, optional): The second of to read. Defaults to `-1`.
+
+        Returns:
+            np.ndarray: If out is specified, the data is written into the given array instead of creating a new array. In this case, the arguments *dtype* and *always_2d* are silently ignored! If *frames* is not given, it is obtained from the length of out.
+        """
+        return self.sfio.read(seconds * self.sfio.samplerate, dtype, always_2d, **extra)
+    
+    def seek(self, frames: int, whence=0) -> int:
         """Set the read position.
 
         Args:
@@ -173,8 +181,6 @@ class FileAudioSource(AudioSourceBase):
         Returns:
             int: The new absolute read position in frames.
         """
-        if whence not in SeekWhenceType.__args__:
-            raise ValueError(f"Bad value: {whence=}.")
         return self.sfio.seek(frames, whence)
     
     def tell(self) -> int:
@@ -202,12 +208,11 @@ class AsyncFileAudioSource(AsyncAudioSourceBase, FileAudioSource):
         closefd: bool=False,
         loop: Optional[asyncio.AbstractEventLoop]=None
     ) -> None:
-        self.name = os.path.abspath(str(filepath))
-        self.sfio = sf.SoundFile(self.name, 'r', samplerate, channels, subtype, endian, format)
-        self.minfo = self._get_mutagen_info(self.name)
-        self.metadata = self._get_info(self.sfio, self.minfo)
-        self.closefd = closefd
-        self.loop = loop or asyncio.get_running_loop()
+        super().__init__(filepath, samplerate, channels, subtype, endian, format, closefd)
+        if loop is not None:
+            self.loop = loop
+        else:
+            self.loop = asyncio.get_running_loop()
     
     def __del__(self) -> None:
         super().close()
@@ -238,12 +243,15 @@ class AsyncFileAudioSource(AsyncAudioSourceBase, FileAudioSource):
         **extra: object
     ) -> np.ndarray:
         return await aiorun(self.loop, super().read, frames, dtype, always_2d, **extra)
+    
+    async def readline(self, seconds: int=-1, dtype: AudioDType='int16', always_2d: bool=False, **extra):
+        return await aiorun(self.loop, super().readline, seconds, dtype, always_2d, **extra)
 
-    async def seek(self, frames: int, whence: SeekWhenceType=0) -> int:
+    async def seek(self, frames: int, whence=0) -> int:
         return await aiorun(self.loop, super().seek, frames, whence)
     
     async def tell(self) -> int:
         return await aiorun(self.loop, super().tell)
     
-    async def close(self):
+    async def close(self) -> None:
         return await aiorun(self.loop, super().close)
