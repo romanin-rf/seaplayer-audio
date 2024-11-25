@@ -22,7 +22,7 @@ from ..functions import check_string, aiorun
 # ^ File Audio Source (sync)
 
 class FileAudioSource(AudioSourceBase):
-    __repr_attrs__ = ('name', ('metadata', ...), 'samplerate', 'channels', 'subtype', 'endian', 'format', 'closefd')
+    __repr_attrs__ = ('name', ('metadata', True), 'samplerate', 'channels', 'subtype', 'endian', 'format', 'bitrate')
     
     @staticmethod
     def _get_mutagen_info(__filepath: str) -> Optional[mutagen.FileType]:
@@ -117,8 +117,8 @@ class FileAudioSource(AudioSourceBase):
     
     @property
     def bitrate(self) -> Optional[int]:
-        if self.minfo.info is not None:
-            if hasattr(self.minfo, "bitrate"):
+        if self.minfo is not None:
+            if self.minfo.info is not None:
                 return self.minfo.info.bitrate
         return None
     

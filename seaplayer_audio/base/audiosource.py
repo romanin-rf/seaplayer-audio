@@ -7,7 +7,7 @@ from .._types import Reprable
 
 # ! Audio Source Types
 
-@dataclass
+@dataclass(frozen=True)
 class AudioSourceMetadata:
     title: Optional[str]=None
     artist: Optional[str]=None
