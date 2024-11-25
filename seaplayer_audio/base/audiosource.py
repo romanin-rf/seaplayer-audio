@@ -2,7 +2,8 @@ import datetime
 from PIL import Image
 from io import IOBase
 from dataclasses import dataclass
-from typing_extensions import Tuple, Any, Iterable, Optional, NoReturn, deprecated
+from typing_extensions import Any, Iterable, Optional, NoReturn, deprecated
+from .._types import Reprable
 
 # ! Audio Source Types
 
@@ -20,17 +21,8 @@ class AudioSourceMetadata:
 
 # ! Audio Source Class (sync)
 
-class AudioSourceBase(IOBase):
+class AudioSourceBase(IOBase, Reprable):
     """Base class for working with audio sources (sync)."""
-    
-    __repr_attrs__: Tuple[str, ...] = ()
-    
-    def __str__(self) -> str:
-        attrs = ', '.join([f"{attrname}={getattr(self, attrname)!r}" for attrname in self.__repr_attrs__])
-        return f"{self.__class__.__name__}({attrs})"
-    
-    def __repr__(self) -> str:
-        return self.__str__()
     
     @deprecated('!!! NOT IMPLEMENTED !!!')
     def __iter__(self) -> NoReturn:

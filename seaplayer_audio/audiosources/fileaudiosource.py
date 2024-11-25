@@ -8,11 +8,11 @@ from PIL import Image
 from io import BytesIO
 # * Typing
 #from enum import Flag, auto
-from types import TracebackType
+from types import TracebackType, SimpleNamespace
 from typing_extensions import Optional, Type
 # * Local Imports
 from ..base import AsyncAudioSourceBase, AudioSourceBase, AudioSourceMetadata
-from ..types import (
+from .._types import (
     FilePathType,
     SeekWhenceType,
     AudioDType, AudioSamplerate, AudioChannels, AudioFormat, AudioSubType, AudioEndians
@@ -22,42 +22,43 @@ from ..functions import check_string, aiorun
 # ^ File Audio Source (sync)
 
 class FileAudioSource(AudioSourceBase):
-    __repr_attrs__ = ('name', 'samplerate', 'channels', 'subtype', 'endian', 'format')
+    __repr_attrs__ = ('name', ('metadata', ...), 'samplerate', 'channels', 'subtype', 'endian', 'format', 'closefd')
     
     @staticmethod
     def _get_mutagen_info(__filepath: str) -> Optional[mutagen.FileType]:
         try: return mutagen.File(__filepath)
-        except: return
+        except: return None
     
     @staticmethod
-    def _get_image(__filepath: str) -> Optional[Image.Image]:
-        file = FileAudioSource._get_mutagen_info(__filepath)
-        if file is None:
-            return
-        apic = file.get('APIC:', None) or file.get('APIC', None)
+    def _get_image(__file: mutagen.FileType) -> Optional[Image.Image]:
+        if __file is None:
+            return None
+        apic = __file.get('APIC:', None) or __file.get('APIC', None)
         if apic is None:
-            return
+            return None
         return Image.open(BytesIO(apic.data))
     
     @staticmethod
-    def _get_info(__io: sf.SoundFile) -> AudioSourceMetadata:
-        metadata = __io.copy_metadata()
-        year = check_string(metadata.get('date', None))
-        try:
-            date = dateutil.parser.parse(year) if (year is not None) else None
-        except:
-            date = None
-        return AudioSourceMetadata(
-            title=check_string(metadata.get('title', None)),
-            artist=check_string(metadata.get('artist', None)),
-            album=check_string(metadata.get('album', None)),
-            tracknumber=check_string(metadata.get('tracknumber', None)),
-            date=date,
-            genre=check_string(metadata.get('genre', None)),
-            copyright=check_string(metadata.get('copyright', None)),
-            software=check_string(metadata.get('software', None)),
-            icon=FileAudioSource._get_image(__io.name)
-        )
+    def _get_info(__io: sf.SoundFile, __file: Optional[mutagen.FileType]) -> AudioSourceMetadata:
+        if __file is not None:
+            metadata = __io.copy_metadata()
+            year = check_string(metadata.get('date', None))
+            try:
+                date = dateutil.parser.parse(year) if (year is not None) else None
+            except:
+                date = None
+            return AudioSourceMetadata(
+                title=check_string(metadata.get('title', None)),
+                artist=check_string(metadata.get('artist', None)),
+                album=check_string(metadata.get('album', None)),
+                tracknumber=check_string(metadata.get('tracknumber', None)),
+                date=date,
+                genre=check_string(metadata.get('genre', None)),
+                copyright=check_string(metadata.get('copyright', None)),
+                software=check_string(metadata.get('software', None)),
+                icon=FileAudioSource._get_image(__file)
+            )
+        return AudioSourceMetadata()
     
     def __init__(
         self,
@@ -69,10 +70,11 @@ class FileAudioSource(AudioSourceBase):
         format: Optional[AudioFormat]=None,
         closefd: bool=False
     ) -> None:
-        self.closefd = closefd
         self.name = os.path.abspath(str(filepath))
-        self._io = sf.SoundFile(self.name, 'r', samplerate, channels, subtype, endian, format)
-        self.info = self._get_info(self._io)
+        self.sfio = sf.SoundFile(self.name, 'r', samplerate, channels, subtype, endian, format)
+        self.minfo = self._get_mutagen_info(self.name)
+        self.metadata = self._get_info(self.sfio, self.minfo)
+        self.closefd = closefd
     
     # ^ Magic Methods
     
@@ -95,32 +97,39 @@ class FileAudioSource(AudioSourceBase):
     
     @property
     def samplerate(self) -> AudioSamplerate:
-        return self._io.samplerate
+        return self.sfio.samplerate
     
     @property
     def channels(self) -> AudioChannels:
-        return self._io.channels
+        return self.sfio.channels
     
     @property
     def subtype(self) -> AudioSubType:
-        return self._io.subtype
+        return self.sfio.subtype
     
     @property
     def endian(self) -> AudioEndians:
-        return self._io.endian
+        return self.sfio.endian
     
     @property
     def format(self) -> AudioFormat:
-        return self._io.format
+        return self.sfio.format
+    
+    @property
+    def bitrate(self) -> Optional[int]:
+        if self.minfo.info is not None:
+            if hasattr(self.minfo, "bitrate"):
+                return self.minfo.info.bitrate
+        return None
     
     @property
     def closed(self) -> bool:
-        return self._io.closed
+        return self.sfio.closed
     
     # ^ IO Methods Tests
     
     def seekable(self) -> bool:
-        return self._io.seekable() and not self.closed
+        return self.sfio.seekable() and not self.closed
     
     def readable(self) -> bool:
         return not self.closed
@@ -149,7 +158,7 @@ class FileAudioSource(AudioSourceBase):
         """
         if dtype not in AudioDType.__args__:
             raise ValueError(f"Bad value: {dtype=}.")
-        return self._io.read(frames, dtype, always_2d, **extra)
+        return self.sfio.read(frames, dtype, always_2d, **extra)
     
     def seek(self, frames: int, whence: SeekWhenceType=0) -> int:
         """Set the read position.
@@ -166,7 +175,7 @@ class FileAudioSource(AudioSourceBase):
         """
         if whence not in SeekWhenceType.__args__:
             raise ValueError(f"Bad value: {whence=}.")
-        return self._io.seek(frames, whence)
+        return self.sfio.seek(frames, whence)
     
     def tell(self) -> int:
         """Return the current read position.
@@ -174,11 +183,11 @@ class FileAudioSource(AudioSourceBase):
         Returns:
             int: Current position.
         """
-        return self._io.tell()
+        return self.sfio.tell()
     
     def close(self) -> None:
         """Close the file. Can be called multiple times."""
-        return self._io.close()
+        return self.sfio.close()
 
 
 class AsyncFileAudioSource(AsyncAudioSourceBase, FileAudioSource):
@@ -193,11 +202,12 @@ class AsyncFileAudioSource(AsyncAudioSourceBase, FileAudioSource):
         closefd: bool=False,
         loop: Optional[asyncio.AbstractEventLoop]=None
     ) -> None:
+        self.name = os.path.abspath(str(filepath))
+        self.sfio = sf.SoundFile(self.name, 'r', samplerate, channels, subtype, endian, format)
+        self.minfo = self._get_mutagen_info(self.name)
+        self.metadata = self._get_info(self.sfio, self.minfo)
         self.closefd = closefd
         self.loop = loop or asyncio.get_running_loop()
-        self.name = os.path.abspath(str(filepath))
-        self._io = sf.SoundFile(self.name, 'r', samplerate, channels, subtype, endian, format)
-        self.info = self._get_info(self._io)
     
     def __del__(self) -> None:
         super().close()

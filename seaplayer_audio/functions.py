@@ -6,7 +6,7 @@ from typing_extensions import (
     Optional, Union,
     Awaitable, Callable, Coroutine
 )
-from .types import ResultType, MethodType
+from ._types import ResultType, MethodType
 
 # ! File Works Methods
 
