@@ -10,7 +10,8 @@ from .._types import AudioSamplerate, AudioChannels, AudioDType, Reprable
 class StreamerState(Flag):
     RUNNING = auto()
     STARTED = auto()
-    BLOCK_SEND = auto()
+    LOCKED = auto()
+    WAITING = auto()
 
 # ^ Streamer Base Class
 
@@ -49,9 +50,9 @@ class StreamerBase(Reprable):
     
     def set_lock(self, __value: bool) -> None:
         if __value:
-            self.state |= StreamerState.BLOCK_SEND
+            self.state |= StreamerState.LOCKED
         else:
-            self.state &= ~StreamerState.BLOCK_SEND
+            self.state &= ~StreamerState.LOCKED
     
     def is_busy(self) -> bool:
         return False
@@ -69,7 +70,7 @@ class StreamerBase(Reprable):
         raise NotImplementedError
     
     def send(self, data) -> bool:
-        if StreamerState.BLOCK_SEND in self.state:
+        if StreamerState.LOCKED in self.state:
             return False
         return False
 
@@ -109,9 +110,9 @@ class AsyncStreamerBase(StreamerBase):
     
     async def set_lock(self, __value: bool) -> None:
         if __value:
-            self.state |= StreamerState.BLOCK_SEND
+            self.state |= StreamerState.LOCKED
         else:
-            self.state &= ~StreamerState.BLOCK_SEND
+            self.state &= ~StreamerState.LOCKED
     
     async def is_busy(self) -> bool:
         return False
@@ -129,6 +130,6 @@ class AsyncStreamerBase(StreamerBase):
         raise NotImplementedError
     
     async def send(self, data) -> bool:
-        if StreamerState.BLOCK_SEND in self.state:
+        if StreamerState.LOCKED in self.state:
             return False
         return False

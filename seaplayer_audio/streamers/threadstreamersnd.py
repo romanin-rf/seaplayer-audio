@@ -25,22 +25,23 @@ class ThreadSoundDeviceStreamer(SoundDeviceStreamerBase):
             dtype=self.dtype,
             device=self.device
         )
-        self.state = StreamerState(StreamerState.BLOCK_SEND)
+        self.state = StreamerState(StreamerState.LOCKED)
         self.thread = Thread(target=self.run)
         self.queue: queue.Queue[np.ndarray] = queue.Queue(1)
     
     def is_busy(self) -> bool:
         return self.queue.qsize() >= 1
     
-    def run(self):
+    def run(self) -> NoReturn:
         if not self.stream.active:
             self.stream.start()
         self.state |= StreamerState.STARTED
         while StreamerState.RUNNING in self.state:
             try:
-                data = self.queue.get(timeout=0.01)
-                self.stream.write(data)
-            except:
+                if StreamerState.LOCKED not in self.state:
+                    data = self.queue.get(timeout=0.01)
+                    self.stream.write(data)
+            except queue.Empty:
                 pass
         if self.stream.active:
             self.stream.abort()
@@ -50,7 +51,7 @@ class ThreadSoundDeviceStreamer(SoundDeviceStreamerBase):
     def start(self) -> None:
         if StreamerState.RUNNING not in self.state:
             self.state |= StreamerState.RUNNING
-            self.set_lock(False)
+            self.state &= ~StreamerState.LOCKED
             self.thread.start()
             while StreamerState.STARTED not in self.state:
                 time.sleep(0.01)
@@ -58,44 +59,21 @@ class ThreadSoundDeviceStreamer(SoundDeviceStreamerBase):
     def stop(self) -> None:
         if StreamerState.RUNNING in self.state:
             self.state &= ~StreamerState.RUNNING
-            self.set_lock(True)
-            self.abort()
+            self.state |= StreamerState.LOCKED
+            self.queue.task_done()
+            self.stream.abort()
             self.stream.stop()
             while StreamerState.STARTED in self.state:
                 time.sleep(0.01)
-            
-            # TODO: What this is shit ;)
     
     def abort(self):
-        self.set_lock(True)
-        self.stream.abort()
+        self.state |= StreamerState.LOCKED
         self.queue.task_done()
-        self.set_lock(False)
+        self.stream.abort()
+        self.state &= ~StreamerState.LOCKED
     
     def send(self, data: np.ndarray) -> bool:
-        if StreamerState.BLOCK_SEND not in self.state:
+        if StreamerState.LOCKED not in self.state:
             self.queue.put(data)
             return True
         return False
-
-A = {
-    "АМУЛЕТ, ЧТОБЫ РАБОТАЛО": """\
-⢀⡴⠑⡄⠀⠀⠀⠀⠀⠀⠀⣀⣀⣤⣤⣤⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀ 
-⠸⡇⠀⠿⡀⠀⠀⠀⣀⡴⢿⣿⣿⣿⣿⣿⣿⣿⣷⣦⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀ 
-⠀⠀⠀⠀⠑⢄⣠⠾⠁⣀⣄⡈⠙⣿⣿⣿⣿⣿⣿⣿⣿⣆⠀⠀⠀⠀⠀⠀⠀⠀ 
-⠀⠀⠀⠀⢀⡀⠁⠀⠀⠈⠙⠛⠂⠈⣿⣿⣿⣿⣿⠿⡿⢿⣆⠀⠀⠀⠀⠀⠀⠀ 
-⠀⠀⠀⢀⡾⣁⣀⠀⠴⠂⠙⣗⡀⠀⢻⣿⣿⠭⢤⣴⣦⣤⣹⠀⠀⠀⢀⢴⣶⣆ 
-⠀⠀⢀⣾⣿⣿⣿⣷⣮⣽⣾⣿⣥⣴⣿⣿⡿⢂⠔⢚⡿⢿⣿⣦⣴⣾⠁⠸⣼⡿ 
-⠀⢀⡞⠁⠙⠻⠿⠟⠉⠀⠛⢹⣿⣿⣿⣿⣿⣌⢤⣼⣿⣾⣿⡟⠉⠀⠀⠀⠀⠀ 
-⠀⣾⣷⣶⠇⠀⠀⣤⣄⣀⡀⠈⠻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇⠀⠀⠀⠀⠀⠀ 
-⠀⠉⠈⠉⠀⠀⢦⡈⢻⣿⣿⣿⣶⣶⣶⣶⣤⣽⡹⣿⣿⣿⣿⡇⠀⠀⠀⠀⠀⠀ 
-⠀⠀⠀⠀⠀⠀⠀⠉⠲⣽⡻⢿⣿⣿⣿⣿⣿⣿⣷⣜⣿⣿⣿⡇⠀⠀⠀⠀⠀⠀ 
-⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⣿⣷⣶⣮⣭⣽⣿⣿⣿⣿⣿⣿⣿⠀⠀⠀⠀⠀⠀⠀ 
-⠀⠀⠀⠀⠀⠀⣀⣀⣈⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠇⠀⠀⠀⠀⠀⠀⠀ 
-⠀⠀⠀⠀⠀⠀⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃⠀⠀⠀⠀⠀⠀⠀⠀ 
-⠀⠀⠀⠀⠀⠀⠀⠹⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠟⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀ 
-⠀⠀⠀⠀⠀⠀⠀⠀⠀⠉⠛⠻⠿⠿⠿⠿⠛⠉\
-"""
-}
-
-print(A["АМУЛЕТ, ЧТОБЫ РАБОТАЛО"])

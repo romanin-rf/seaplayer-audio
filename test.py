@@ -10,4 +10,5 @@ with seapa.FileAudioSource(PATH) as audiofile:
             while True:
                 streamer.send(audiofile.readline(1))
         except KeyboardInterrupt:
+            streamer.stop()
             print("Aborted!!!")
