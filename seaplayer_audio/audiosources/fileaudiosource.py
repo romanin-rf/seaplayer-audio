@@ -7,7 +7,6 @@ import soundfile as sf
 from PIL import Image
 from io import BytesIO
 # * Typing
-#from enum import Flag, auto
 from types import TracebackType
 from typing_extensions import Optional, Type
 # * Local Imports
@@ -157,7 +156,7 @@ class FileAudioSource(AudioSourceBase):
         """
         return self.sfio.read(frames, dtype, always_2d, **extra)
     
-    def readline(self, seconds: int=-1, dtype: AudioDType='int16', always_2d: bool=False, **extra: object):
+    def readline(self, seconds: float=-1.0, dtype: AudioDType='int16', always_2d: bool=False, **extra: object):
         """Read from the file and return data (*1 second*) as NumPy array.
 
         Args:
@@ -166,7 +165,7 @@ class FileAudioSource(AudioSourceBase):
         Returns:
             np.ndarray: If out is specified, the data is written into the given array instead of creating a new array. In this case, the arguments *dtype* and *always_2d* are silently ignored! If *frames* is not given, it is obtained from the length of out.
         """
-        return self.sfio.read(seconds * self.sfio.samplerate, dtype, always_2d, **extra)
+        return self.sfio.read(int(seconds * self.sfio.samplerate), dtype, always_2d, **extra)
     
     def seek(self, frames: int, whence=0) -> int:
         """Set the read position.
@@ -244,7 +243,7 @@ class AsyncFileAudioSource(AsyncAudioSourceBase, FileAudioSource):
     ) -> np.ndarray:
         return await aiorun(self.loop, super().read, frames, dtype, always_2d, **extra)
     
-    async def readline(self, seconds: int=-1, dtype: AudioDType='int16', always_2d: bool=False, **extra):
+    async def readline(self, seconds: float=-1.0, dtype: AudioDType='int16', always_2d: bool=False, **extra):
         return await aiorun(self.loop, super().readline, seconds, dtype, always_2d, **extra)
 
     async def seek(self, frames: int, whence=0) -> int:
