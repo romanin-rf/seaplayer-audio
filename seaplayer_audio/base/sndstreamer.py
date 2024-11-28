@@ -1,3 +1,4 @@
+from asyncio import AbstractEventLoop
 from typing_extensions import Optional
 from .._types import AudioSamplerate, AudioChannels, AudioDType
 from .streamer import StreamerBase, AsyncStreamerBase
@@ -29,7 +30,8 @@ class AsyncSoundDeviceStreamerBase(AsyncStreamerBase):
         channels: Optional[AudioChannels]=None,
         dtype: Optional[AudioDType]=None,
         closefd: bool=True,
+        loop: Optional[AbstractEventLoop]=None,
         device: Optional[int]=None
     ) -> None:
-        super().__init__(samplerate, channels, dtype, closefd)
+        super().__init__(samplerate, channels, dtype, closefd, loop)
         self.device = device

@@ -47,6 +47,19 @@ def _aiorun_callable(
     """Call the callable."""
     return method(*args, **kwargs)
 
+def aiowrap(loop: asyncio.AbstractEventLoop, method: MethodType):
+    if inspect.iscoroutinefunction(method):
+        runner = _aiorun_coroutine
+    elif inspect.isawaitable(method):
+        runner = _aiorun_awaitable
+    elif callable(method):
+        runner = _aiorun_callable
+    else:
+        raise RuntimeError
+    async def wrapped(*args, **kwargs):
+        return await loop.run_in_executor(None, runner, method, kwargs, *args)
+    return wrapped
+
 async def aiorun(
     loop: asyncio.AbstractEventLoop,
     method: MethodType,
