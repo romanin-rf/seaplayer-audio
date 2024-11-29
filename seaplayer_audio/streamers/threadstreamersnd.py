@@ -99,6 +99,7 @@ class AsyncThreadSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
             dtype=self.dtype,
             device=self.device
         )
+        self.task: Optional[asyncio.Task] = None
         self.state = StreamerState(StreamerState.LOCKED)
         self.queue: asyncio.Queue[np.ndarray] = asyncio.Queue(1)
         self.__stream_abort = aiowrap(self.loop, self.stream.abort)
@@ -129,7 +130,7 @@ class AsyncThreadSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         if StreamerState.RUNNING not in self.state:
             self.state |= StreamerState.RUNNING
             self.state &= ~StreamerState.LOCKED
-            # TODO: Написать метод...
+            self.task = asyncio.create_task(self.run)
             while StreamerState.STARTED not in self.state:
                 await asyncio.sleep(0.01)
     
@@ -140,7 +141,7 @@ class AsyncThreadSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
             await self.queue.task_done()
             await self.__stream_abort()
             await self.__stream_stop()
-            while StreamerState.STARTED in self.state:
+            while (StreamerState.STARTED in self.state) or (not self.task.done()):
                 await asyncio.sleep(0.01)
     
     async def abort(self):
