@@ -16,7 +16,7 @@ class StreamerState(Flag):
 # ^ Streamer Base Class
 
 class StreamerBase(Reprable):
-    __streamer_name__: str  = 'base'
+    __steamer_type__: str  = 'base'
     
     __repr_attrs__          = ('samplerate', 'channels', 'dtype', 'state', 'closefd')
     
@@ -57,7 +57,7 @@ class StreamerBase(Reprable):
     def is_busy(self) -> bool:
         return False
     
-    def run(self) -> NoReturn:
+    def run(self) -> None:
         raise NotImplementedError
     
     def abort(self) -> None:
@@ -117,8 +117,8 @@ class AsyncStreamerBase(StreamerBase):
     async def is_busy(self) -> bool:
         return False
     
-    async def run(self) -> NoReturn:
-        pass
+    def run(self) -> None:
+        raise NotImplementedError
     
     async def abort(self) -> None:
         raise NotImplementedError

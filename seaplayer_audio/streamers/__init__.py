@@ -1,1 +1,1 @@
-from .threadstreamersnd import ThreadSoundDeviceStreamer
+from .threadstreamersnd import ThreadSoundDeviceStreamer, AsyncThreadSoundDeviceStreamer

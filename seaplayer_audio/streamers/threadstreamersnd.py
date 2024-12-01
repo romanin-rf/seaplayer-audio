@@ -1,3 +1,4 @@
+import asyncio.format_helpers
 import time
 import queue
 import asyncio
@@ -13,6 +14,8 @@ from ..base import SoundDeviceStreamerBase, AsyncSoundDeviceStreamerBase, Stream
 # ^ Thread Streamer
 
 class ThreadSoundDeviceStreamer(SoundDeviceStreamerBase):
+    __steamer_type__ = 'thread-sounddevice'
+    
     def __init__(
         self,
         samplerate: Optional[AudioSamplerate]=None,
@@ -35,7 +38,7 @@ class ThreadSoundDeviceStreamer(SoundDeviceStreamerBase):
     def is_busy(self) -> bool:
         return self.queue.qsize() >= 1
     
-    def run(self) -> NoReturn:
+    def run(self) -> None:
         if not self.stream.active:
             self.stream.start()
         self.state |= StreamerState.STARTED
@@ -83,6 +86,8 @@ class ThreadSoundDeviceStreamer(SoundDeviceStreamerBase):
 
 
 class AsyncThreadSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
+    __steamer_type__ = 'async-thread-sounddevice'
+    
     def __init__(
         self,
         samplerate: Optional[AudioSamplerate]=None,
@@ -101,36 +106,32 @@ class AsyncThreadSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         )
         self.task: Optional[asyncio.Task] = None
         self.state = StreamerState(StreamerState.LOCKED)
-        self.queue: asyncio.Queue[np.ndarray] = asyncio.Queue(1)
-        self.__stream_abort = aiowrap(self.loop, self.stream.abort)
-        self.__stream_stop = aiowrap(self.loop, self.stream.stop)
-        self.__stream_start = aiowrap(self.loop, self.stream.start)
-        self.__stream_write = aiowrap(self.loop, self.stream.write)
+        self.queue: queue.Queue[np.ndarray] = queue.Queue(1)
     
     async def is_busy(self) -> bool:
         return self.queue.qsize() >= 1
     
-    async def run(self) -> NoReturn:
+    def run(self) -> None:
         if not self.stream.active:
-            await self.__stream_start()
+            self.stream.start()
         self.state |= StreamerState.STARTED
         while StreamerState.RUNNING in self.state:
             try:
                 if StreamerState.LOCKED not in self.state:
-                    data = await self.queue.get(timeout=0.01)
-                    await self.__stream_write(data)
+                    data = self.queue.get(timeout=0.01)
+                    self.stream.write(data)
             except queue.Empty:
                 pass
         if self.stream.active:
-            await self.__stream_abort()
-            await self.__stream_stop()
+            self.stream.abort()
+            self.stream.stop()
         self.state &= ~StreamerState.STARTED
     
     async def start(self) -> None:
         if StreamerState.RUNNING not in self.state:
             self.state |= StreamerState.RUNNING
             self.state &= ~StreamerState.LOCKED
-            self.task = asyncio.create_task(self.run)
+            self.task = asyncio.create_task(asyncio.to_thread(self.run))
             while StreamerState.STARTED not in self.state:
                 await asyncio.sleep(0.01)
     
@@ -138,20 +139,26 @@ class AsyncThreadSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         if StreamerState.RUNNING in self.state:
             self.state &= ~StreamerState.RUNNING
             self.state |= StreamerState.LOCKED
-            await self.queue.task_done()
-            await self.__stream_abort()
-            await self.__stream_stop()
+            self.queue.task_done()
+            self.stream.abort()
+            self.stream.stop()
             while (StreamerState.STARTED in self.state) or (not self.task.done()):
                 await asyncio.sleep(0.01)
     
     async def abort(self):
         self.state |= StreamerState.LOCKED
-        await self.queue.task_done()
-        await self.__stream_abort()
+        self.queue.task_done()
+        self.stream.abort()
         self.state &= ~StreamerState.LOCKED
     
     async def send(self, data: np.ndarray) -> bool:
         if StreamerState.LOCKED not in self.state:
-            await self.queue.put(data)
+            while True:
+                try:
+                    self.queue.put(data, block=False)
+                    break
+                except queue.Full:
+                    pass
+                await asyncio.sleep(0.01)
             return True
         return False
