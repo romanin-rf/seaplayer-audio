@@ -2,7 +2,7 @@ import asyncio
 from asyncio import AbstractEventLoop
 from enum import Flag, auto
 from types import TracebackType
-from typing_extensions import Optional, Type, NoReturn
+from typing_extensions import Optional, Type
 from .._types import AudioSamplerate, AudioChannels, AudioDType, Reprable
 
 # ^ Streamer State Class
@@ -29,7 +29,7 @@ class StreamerBase(Reprable):
     ) -> None:
         self.samplerate = samplerate or 44100
         self.channels = channels or 2
-        self.dtype = dtype or 'int16'
+        self.dtype = dtype or 'float32'
         self.closefd = closefd
         self.state = StreamerState(0)
     

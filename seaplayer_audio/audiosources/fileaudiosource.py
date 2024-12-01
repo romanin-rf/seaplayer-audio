@@ -137,7 +137,7 @@ class FileAudioSource(AudioSourceBase):
     def read(
         self,
         frames: int=-1,
-        dtype: AudioDType='int16',
+        dtype: AudioDType='float32',
         always_2d: bool=False,
         **extra: object
     ) -> np.ndarray:
@@ -237,13 +237,13 @@ class AsyncFileAudioSource(AsyncAudioSourceBase, FileAudioSource):
     async def read(
         self,
         frames: int=-1,
-        dtype: AudioDType='int16',
+        dtype: AudioDType='float32',
         always_2d: bool=False,
         **extra: object
     ) -> np.ndarray:
         return await aiorun(self.loop, super().read, frames, dtype, always_2d, **extra)
     
-    async def readline(self, seconds: float=-1.0, dtype: AudioDType='int16', always_2d: bool=False, **extra):
+    async def readline(self, seconds: float=-1.0, dtype: AudioDType='float32', always_2d: bool=False, **extra):
         return await aiorun(self.loop, super().readline, seconds, dtype, always_2d, **extra)
 
     async def seek(self, frames: int, whence=0) -> int:
