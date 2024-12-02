@@ -6,8 +6,7 @@ import numpy as np
 import sounddevice as sd
 from threading import Thread
 from asyncio import AbstractEventLoop
-from typing_extensions import Optional, NoReturn
-from ..functions import aiorun, aiowrap
+from typing_extensions import Optional
 from .._types import AudioSamplerate, AudioChannels, AudioDType
 from ..base import SoundDeviceStreamerBase, AsyncSoundDeviceStreamerBase, StreamerState
 
@@ -57,10 +56,10 @@ class ThreadSoundDeviceStreamer(SoundDeviceStreamerBase):
     def start(self) -> None:
         if StreamerState.RUNNING not in self.state:
             self.state |= StreamerState.RUNNING
-            self.state &= ~StreamerState.LOCKED
             self.thread.start()
             while StreamerState.STARTED not in self.state:
                 time.sleep(0.01)
+            self.state &= ~StreamerState.LOCKED
     
     def stop(self) -> None:
         if StreamerState.RUNNING in self.state:
@@ -71,6 +70,7 @@ class ThreadSoundDeviceStreamer(SoundDeviceStreamerBase):
             self.stream.stop()
             while StreamerState.STARTED in self.state:
                 time.sleep(0.01)
+            
     
     def abort(self):
         self.state |= StreamerState.LOCKED
@@ -130,10 +130,10 @@ class AsyncThreadSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
     async def start(self) -> None:
         if StreamerState.RUNNING not in self.state:
             self.state |= StreamerState.RUNNING
-            self.state &= ~StreamerState.LOCKED
             self.task = asyncio.create_task(asyncio.to_thread(self.run))
             while StreamerState.STARTED not in self.state:
                 await asyncio.sleep(0.01)
+            self.state &= ~StreamerState.LOCKED
     
     async def stop(self) -> None:
         if StreamerState.RUNNING in self.state:
