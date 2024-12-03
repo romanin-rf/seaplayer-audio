@@ -156,7 +156,7 @@ class FileAudioSource(AudioSourceBase):
         """
         return self.sfio.read(frames, dtype, always_2d, **extra)
     
-    def readline(self, seconds: float=-1.0, dtype: AudioDType='int16', always_2d: bool=False, **extra: object):
+    def readline(self, seconds: float=-1.0, dtype: AudioDType='float32', always_2d: bool=False, **extra: object):
         """Read from the file and return data (*1 second*) as NumPy array.
 
         Args:

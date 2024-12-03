@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "seaplayer-audio"
-version = "0.1.0"
-description = "A library for playing audio streams."
+version = "0.1.21"
+description = "A library for async/sync playback audio."
 repository = "https://github.com/romanin-rf/seaplayer-audio"
 authors = ["Romanin <60302782+romanin-rf@users.noreply.github.com>"]
 license = "MIT"
@@ -17,7 +17,7 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
     "Operating System :: Unix",
     "Topic :: Multimedia :: Sound/Audio",
-    "Topic :: Multimedia :: Sound/Audio :: MIDI",
+    #"Topic :: Multimedia :: Sound/Audio :: MIDI",              # TODO: IN PLANE!
     "Topic :: Multimedia :: Sound/Audio :: Players",
     "Topic :: Multimedia :: Sound/Audio :: Players :: MP3",
     "Typing :: Typed"
