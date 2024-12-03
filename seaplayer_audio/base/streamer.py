@@ -93,6 +93,17 @@ class AsyncStreamerBase(StreamerBase):
         else:
             self.loop = asyncio.get_running_loop()
     
+    def __enter__(self):
+        raise NotImplementedError
+    
+    def __exit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType]
+    ):
+        raise NotImplementedError
+    
     async def __aenter__(self):
         await self.start()
         return self

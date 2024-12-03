@@ -4,7 +4,10 @@ from .base import (
     AsyncSoundDeviceStreamerBase, SoundDeviceStreamerBase
 )
 from .audiosources import FileAudioSource, AsyncFileAudioSource
-from .streamers import ThreadSoundDeviceStreamer, AsyncThreadSoundDeviceStreamer, CallbackSoundDeviceStreamer
+from .streamers import (
+    ThreadSoundDeviceStreamer, AsyncThreadSoundDeviceStreamer,
+    CallbackSoundDeviceStreamer, AsyncCallbackSoundDeviceStreamer
+)
 from ._types import AudioSamplerate, AudioChannels, AudioDType, AudioFormat, AudioSubType, AudioEndians
 
 __all__ = [
@@ -12,7 +15,7 @@ __all__ = [
     'AsyncStreamerBase', 'StreamerBase', 'StreamerState',
     'AsyncSoundDeviceStreamerBase', 'SoundDeviceStreamerBase',
     'ThreadSoundDeviceStreamer', 'AsyncThreadSoundDeviceStreamer',
-    'CallbackSoundDeviceStreamer',
+    'CallbackSoundDeviceStreamer', 'AsyncCallbackSoundDeviceStreamer',
     'FileAudioSource', 'AsyncFileAudioSource',
     'AudioSamplerate', 'AudioChannels', 'AudioDType', 'AudioFormat', 'AudioSubType', 'AudioEndians'
 ]
