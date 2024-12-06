@@ -1,6 +1,6 @@
 from numpy import ndarray
 from soundfile import SoundFile
-from typing_extensions import Optional
+from typing_extensions import Optional, Self
 from .._types import AudioSamplerate, AudioChannels, AudioSubType, AudioFormat, AudioEndians, AudioDType
 from ..base import AudioSourceBase
 from ..functions import get_mutagen_info, get_audio_metadata
@@ -8,6 +8,7 @@ from .urlio import URLIO
 
 # ! URL Audio Source Class
 class URLAudioSource(AudioSourceBase):
+    """A class for reading an audio stream in array format by direct/indirect reference."""
     __repr_attrs__ = ('name', ('metadata', True), 'samplerate', 'channels', 'subtype', 'endian', 'format', 'bitrate')
     
     def __init__(
@@ -26,36 +27,60 @@ class URLAudioSource(AudioSourceBase):
         self.sfio = SoundFile(self.urlio, 'r', samplerate, channels, subtype, endian, format, closefd=closefd)
         self.minfo = get_mutagen_info(self.name)
         self.metadata = get_audio_metadata(self.sfio, self.minfo)
+        self.closefd = closefd
+    
+    # ^ Dander Methods
+    
+    def __del__(self) -> None:
+        if self.closefd and (not self.closed):
+            self.close()
+    
+    def __enter__(self) -> Self:
+        return self
+    
+    def __exit__(self, *args: object) -> None:
+        if self.closefd and (not self.closed):
+            self.close()
     
     # ^ Propertyes
     
     @property
     def samplerate(self) -> AudioSamplerate:
+        """The sampling rate of the audio source."""
         return self.sfio.samplerate
     
     @property
     def channels(self) -> AudioChannels:
+        """The number of channels of the audio source."""
         return self.sfio.channels
     
     @property
     def subtype(self) -> AudioSubType:
+        """The type of audio stream packaging."""
         return self.sfio.subtype
     
     @property
     def endian(self) -> AudioEndians:
+        """The type of byte sequence."""
         return self.sfio.endian
     
     @property
     def format(self) -> AudioFormat:
+        """Audio format for storing an audio stream."""
         return self.sfio.format
     
     @property
     def bitrate(self) -> Optional[int]:
-        try:    return self.minfo.info.bitrate
-        except: return None
+        """The speed of the audio stream in the format of bits per second."""
+        try:
+            if self.minfo.info.bitrate is not None:
+                return self.minfo.info.bitrate
+        except:
+            pass
     
     @property
     def closed(self) -> bool:
+        """Whether the IO will be closed after the context manager is closed."""
         return self.sfio.closed
     
     # ^ IO Check Methods
@@ -126,4 +151,5 @@ class URLAudioSource(AudioSourceBase):
     
     def close(self) -> None:
         """Close the file. Can be called multiple times."""
-        return self.sfio.close()
+        self.urlio.close()
+        self.sfio.close()

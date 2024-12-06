@@ -107,7 +107,7 @@ class URLIO(BufferedReader):
     def __enter__(self) -> Self:
         return self
     
-    def __exit__(self, *args) -> None:
+    def __exit__(self, *args: object) -> None:
         if self.closefd and (not self.closed):
             self.close()
     
