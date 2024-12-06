@@ -16,6 +16,7 @@ from ..functions import aiorun, get_audio_metadata, get_mutagen_info
 # ^ File Audio Source (sync)
 
 class FileAudioSource(AudioSourceBase):
+    """A class for reading an audio stream in array format from a file."""
     __repr_attrs__ = ('name', ('metadata', True), 'samplerate', 'channels', 'subtype', 'endian', 'format', 'bitrate')
     
     def __init__(
@@ -55,31 +56,41 @@ class FileAudioSource(AudioSourceBase):
     
     @property
     def samplerate(self) -> AudioSamplerate:
+        """The sampling rate of the audio source."""
         return self.sfio.samplerate
     
     @property
     def channels(self) -> AudioChannels:
+        """The number of channels of the audio source."""
         return self.sfio.channels
     
     @property
     def subtype(self) -> AudioSubType:
+        """The type of audio stream packaging."""
         return self.sfio.subtype
     
     @property
     def endian(self) -> AudioEndians:
+        """The type of byte sequence."""
         return self.sfio.endian
     
     @property
     def format(self) -> AudioFormat:
+        """Audio format for storing an audio stream."""
         return self.sfio.format
     
     @property
     def bitrate(self) -> Optional[int]:
-        try:    return self.minfo.info.bitrate
-        except: return None
+        """The speed of the audio stream in the format of bits per second."""
+        try:
+            if self.minfo.info.bitrate is not None:
+                return self.minfo.info.bitrate
+        except:
+            pass
     
     @property
     def closed(self) -> bool:
+        """Whether the IO will be closed after the context manager is closed."""
         return self.sfio.closed
     
     # ^ IO Methods Tests

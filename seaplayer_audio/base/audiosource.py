@@ -3,7 +3,10 @@ from PIL import Image
 from io import IOBase
 from dataclasses import dataclass
 from typing_extensions import Any, Iterable, Optional, NoReturn, deprecated
-from .._types import Reprable
+from .._types import (
+    AudioSamplerate, AudioChannels, AudioSubType, AudioEndians, AudioFormat,
+    Reprable
+)
 
 # ! Audio Source Types
 
@@ -23,6 +26,18 @@ class AudioSourceMetadata:
 
 class AudioSourceBase(IOBase, Reprable):
     """Base class for working with audio sources (sync)."""
+    
+    __slots__ = ('samplerate', 'channels', 'subtype', 'endian', 'format')
+    
+    # ^ Variables
+    
+    samplerate: AudioSamplerate
+    channels: AudioChannels
+    subtype: AudioSubType
+    endian: AudioEndians
+    format: AudioFormat
+    
+    # ^ Methods
     
     @deprecated('!!! NOT IMPLEMENTED !!!')
     def __iter__(self) -> NoReturn:
