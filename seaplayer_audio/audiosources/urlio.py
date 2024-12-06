@@ -1,10 +1,10 @@
 from urllib.request import urlopen
 from tempfile import TemporaryFile
-from io import IOBase, BufferedReader, BytesIO, DEFAULT_BUFFER_SIZE
+from io import BufferedReader, BytesIO, DEFAULT_BUFFER_SIZE
 from typing_extensions import (
     Iterable,
     Self,
-    Literal, Optional, 
+    Literal, Optional,
     NoReturn, deprecated
 )
 from .._types import URLOpenRet
@@ -12,14 +12,14 @@ from .._types import URLOpenRet
 # ! URL IO Class
 class URLIO(BufferedReader):
     # ^ Hidden init methods
-    
+
     def __open_buffer(self, buffer_type: Literal['temp', 'mem']) -> BufferedReader:
         if buffer_type == 'mem':
             return BytesIO()
         elif buffer_type == 'temp':
-            return TemporaryFile('wb+')
+            return TemporaryFile('wb+', delete=True, delete_on_close=True)
         raise ValueError(buffer_type)
-    
+
     def __getsize(self) -> int:
         ct = self.tell()
         size = self.__buffer.seek(0, 2)
@@ -57,7 +57,7 @@ class URLIO(BufferedReader):
                 self.__fullload()
     
     def __seek_preparation(self, offset: int, whence: int) -> None:
-        if (not self.__full) and (offset > 0):
+        if (not self.__full) and (offset >= 0):
             if whence == 0:
                 s = self.__getsize() - offset
                 if s > 0:
@@ -91,14 +91,8 @@ class URLIO(BufferedReader):
         self.__stream: URLOpenRet = urlopen(self.__url)
         self.__buffer = self.__open_buffer(self.__buffer_type)
         self.__full = False
-        print(f"[  DIR ]: {dir(self)}")
     
     # ^ Magic Methods
-    
-    def __getattribute__(self, item: str):
-        __class_name__ = super().__getattribute__('__class__').__name__
-        print(f'[ CALL ]: {__class_name__}.{item}')
-        return super().__getattribute__(item)
     
     def __del__(self) -> None:
         if self.closefd and (not self.closed):
@@ -139,7 +133,7 @@ class URLIO(BufferedReader):
     
     @property
     def length(self) -> Optional[int]:
-        if hasattr(self.__stream):
+        if hasattr(self.__stream, 'length'):
             if isinstance(self.__stream.length, int):
                 return self.__stream.length
         return None
