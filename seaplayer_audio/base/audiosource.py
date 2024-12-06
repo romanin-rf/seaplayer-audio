@@ -40,12 +40,12 @@ class AudioSourceBase(IOBase, Reprable):
     @deprecated('!!! NOT IMPLEMENTED !!!')
     def write(self, *args, **kwargs) -> NoReturn:
         """!!! NOT IMPLEMENTED !!!"""
-        raise NotImplementedError
+        raise OSError
     
     @deprecated('!!! NOT IMPLEMENTED !!!')
     def writelines(self, lines: Iterable[Any]) -> NoReturn:
         """!!! NOT IMPLEMENTED !!!"""
-        raise NotImplementedError
+        raise OSError
     
     @deprecated('!!! NOT IMPLEMENTED !!!')
     def truncate(self, size: Optional[int]=None) -> NoReturn:
@@ -63,7 +63,7 @@ class AudioSourceBase(IOBase, Reprable):
     @deprecated('!!! NOT IMPLEMENTED !!!')
     def fileno(self) -> NoReturn:
         """!!! NOT IMPLEMENTED !!!"""
-        raise NotImplementedError
+        raise OSError
 
 # ! Audio Source Class (async)
 
@@ -86,12 +86,12 @@ class AsyncAudioSourceBase(AudioSourceBase):
     @deprecated('!!! NOT IMPLEMENTED !!!')
     async def write(self, *args, **kwargs) -> NoReturn:
         """!!! NOT IMPLEMENTED !!!"""
-        raise NotImplementedError
+        raise OSError
     
     @deprecated('!!! NOT IMPLEMENTED !!!')
     async def writelines(self, lines: Iterable[Any]) -> NoReturn:
         """!!! NOT IMPLEMENTED !!!"""
-        raise NotImplementedError
+        raise OSError
     
     @deprecated('!!! NOT IMPLEMENTED !!!')
     async def truncate(self, size = ...) -> NoReturn:
@@ -109,4 +109,4 @@ class AsyncAudioSourceBase(AudioSourceBase):
     @deprecated('!!! NOT IMPLEMENTED !!!')
     async def fileno(self) -> NoReturn:
         """!!! NOT IMPLEMENTED !!!"""
-        raise NotImplementedError
+        raise OSError
