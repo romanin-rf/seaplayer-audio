@@ -1,62 +1,22 @@
 import os
 import asyncio
-import mutagen
-import dateutil.parser
-import numpy as np
-import soundfile as sf
-from PIL import Image
-from io import BytesIO
+from numpy import ndarray
+from soundfile import SoundFile
 # * Typing
 from types import TracebackType
 from typing_extensions import Optional, Type
 # * Local Imports
-from ..base import AsyncAudioSourceBase, AudioSourceBase, AudioSourceMetadata
+from ..base import AsyncAudioSourceBase, AudioSourceBase
 from .._types import (
     FilePathType,
     AudioDType, AudioSamplerate, AudioChannels, AudioFormat, AudioSubType, AudioEndians
 )
-from ..functions import check_string, aiorun
+from ..functions import aiorun, get_audio_metadata, get_mutagen_info
 
 # ^ File Audio Source (sync)
 
 class FileAudioSource(AudioSourceBase):
     __repr_attrs__ = ('name', ('metadata', True), 'samplerate', 'channels', 'subtype', 'endian', 'format', 'bitrate')
-    
-    @staticmethod
-    def _get_mutagen_info(__filepath: str) -> Optional[mutagen.FileType]:
-        try: return mutagen.File(__filepath)
-        except: return None
-    
-    @staticmethod
-    def _get_image(__file: mutagen.FileType) -> Optional[Image.Image]:
-        if __file is None:
-            return None
-        apic = __file.get('APIC:', None) or __file.get('APIC', None)
-        if apic is None:
-            return None
-        return Image.open(BytesIO(apic.data))
-    
-    @staticmethod
-    def _get_info(__io: sf.SoundFile, __file: Optional[mutagen.FileType]) -> AudioSourceMetadata:
-        if __file is not None:
-            metadata = __io.copy_metadata()
-            year = check_string(metadata.get('date', None))
-            try:
-                date = dateutil.parser.parse(year) if (year is not None) else None
-            except:
-                date = None
-            return AudioSourceMetadata(
-                title=check_string(metadata.get('title', None)),
-                artist=check_string(metadata.get('artist', None)),
-                album=check_string(metadata.get('album', None)),
-                tracknumber=check_string(metadata.get('tracknumber', None)),
-                date=date,
-                genre=check_string(metadata.get('genre', None)),
-                copyright=check_string(metadata.get('copyright', None)),
-                software=check_string(metadata.get('software', None)),
-                icon=FileAudioSource._get_image(__file)
-            )
-        return AudioSourceMetadata()
     
     def __init__(
         self,
@@ -66,12 +26,12 @@ class FileAudioSource(AudioSourceBase):
         subtype:  Optional[AudioSubType]=None,
         endian: Optional[AudioEndians]=None,
         format: Optional[AudioFormat]=None,
-        closefd: bool=False
+        closefd: bool=True
     ) -> None:
         self.name = os.path.abspath(str(filepath))
-        self.sfio = sf.SoundFile(self.name, 'r', samplerate, channels, subtype, endian, format)
-        self.minfo = self._get_mutagen_info(self.name)
-        self.metadata = self._get_info(self.sfio, self.minfo)
+        self.sfio = SoundFile(self.name, 'r', samplerate, channels, subtype, endian, format, closefd=closefd)
+        self.minfo = get_mutagen_info(self.name)
+        self.metadata = get_audio_metadata(self.sfio, self.minfo)
         self.closefd = closefd
     
     # ^ Magic Methods
@@ -115,10 +75,8 @@ class FileAudioSource(AudioSourceBase):
     
     @property
     def bitrate(self) -> Optional[int]:
-        if self.minfo is not None:
-            if self.minfo.info is not None:
-                return self.minfo.info.bitrate
-        return None
+        try:    return self.minfo.info.bitrate
+        except: return None
     
     @property
     def closed(self) -> bool:
@@ -140,7 +98,7 @@ class FileAudioSource(AudioSourceBase):
         dtype: AudioDType='float32',
         always_2d: bool=False,
         **extra: object
-    ) -> np.ndarray:
+    ) -> ndarray:
         """Read from the file and return data as NumPy array.
 
         Args:
@@ -152,7 +110,7 @@ class FileAudioSource(AudioSourceBase):
             ValueError: The `dtype` value is incorrect.
 
         Returns:
-            np.ndarray: If out is specified, the data is written into the given array instead of creating a new array. In this case, the arguments *dtype* and *always_2d* are silently ignored! If *frames* is not given, it is obtained from the length of out.
+            ndarray: If out is specified, the data is written into the given array instead of creating a new array. In this case, the arguments *dtype* and *always_2d* are silently ignored! If *frames* is not given, it is obtained from the length of out.
         """
         return self.sfio.read(frames, dtype, always_2d, **extra)
     
@@ -163,7 +121,7 @@ class FileAudioSource(AudioSourceBase):
             seconds (int, optional): The second of to read. Defaults to `-1`.
 
         Returns:
-            np.ndarray: If out is specified, the data is written into the given array instead of creating a new array. In this case, the arguments *dtype* and *always_2d* are silently ignored! If *frames* is not given, it is obtained from the length of out.
+            ndarray: If out is specified, the data is written into the given array instead of creating a new array. In this case, the arguments *dtype* and *always_2d* are silently ignored! If *frames* is not given, it is obtained from the length of out.
         """
         return self.sfio.read(int(seconds * self.sfio.samplerate), dtype, always_2d, **extra)
     
@@ -240,10 +198,10 @@ class AsyncFileAudioSource(AsyncAudioSourceBase, FileAudioSource):
         dtype: AudioDType='float32',
         always_2d: bool=False,
         **extra: object
-    ) -> np.ndarray:
+    ) -> ndarray:
         return await aiorun(self.loop, super().read, frames, dtype, always_2d, **extra)
     
-    async def readline(self, seconds: float=-1.0, dtype: AudioDType='float32', always_2d: bool=False, **extra):
+    async def readline(self, seconds: float=-1.0, dtype: AudioDType='float32', always_2d: bool=False, **extra) -> ndarray:
         return await aiorun(self.loop, super().readline, seconds, dtype, always_2d, **extra)
 
     async def seek(self, frames: int, whence=0) -> int:
