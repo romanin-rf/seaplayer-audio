@@ -45,6 +45,15 @@ class URLAudioSource(AudioSourceBase):
     # ^ Propertyes
     
     @property
+    def duration(self) -> float:
+        """The duration of the audio source in seconds."""
+        return self.sfio.frames / self.sfio.samplerate
+    
+    @property
+    def frames(self) -> int:
+        return self.sfio.frames
+    
+    @property
     def samplerate(self) -> AudioSamplerate:
         """The sampling rate of the audio source."""
         return self.sfio.samplerate

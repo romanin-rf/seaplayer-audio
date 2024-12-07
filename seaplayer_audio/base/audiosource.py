@@ -27,7 +27,7 @@ class AudioSourceMetadata:
 class AudioSourceBase(IOBase, Reprable):
     """Base class for working with audio sources (sync)."""
     
-    __slots__ = ('samplerate', 'channels', 'subtype', 'endian', 'format')
+    __slots__ = ('samplerate', 'channels', 'subtype', 'endian', 'format', 'frames')
     
     # ^ Variables
     
@@ -36,6 +36,8 @@ class AudioSourceBase(IOBase, Reprable):
     subtype: AudioSubType
     endian: AudioEndians
     format: AudioFormat
+    
+    frames: int
     
     # ^ Methods
     
