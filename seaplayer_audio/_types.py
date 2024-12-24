@@ -90,7 +90,7 @@ class URLOpenRetType:
 class URLOpenRetFile(BufferedReader, URLOpenRetType):
     pass
 
-class URLOpenRetHTTP(HTTPResponse, BufferedReader, URLOpenRetType):
+class URLOpenRetHTTP(HTTPResponse, URLOpenRetFile):
     pass
 
 URLOpenRet: TypeAlias = Union[URLOpenRetFile, URLOpenRetHTTP]

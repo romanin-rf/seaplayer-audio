@@ -33,14 +33,20 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
     
     def __callback__(self, outdata: ndarray, frames: int, time, status):
         if self.buffer is None:
-            d = self.queue.get()
+            try:
+                d = self.queue.get()
+            except:
+                return
             wdata = d[:frames]
             self.buffer = d[frames:]
         elif len(self.buffer) >= frames:
             wdata = self.buffer[:frames]
             self.buffer = self.buffer[frames:]
         elif (len(self.buffer) < frames) and (not self.queue.empty()):
-            d = self.queue.get()
+            try:
+                d = self.queue.get()
+            except:
+                return
             wdata = self.buffer.copy()
             self.buffer = None
             needed = frames - len(wdata)
@@ -122,14 +128,20 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
     
     def __callback__(self, outdata: ndarray, frames: int, time, status):
         if self.buffer is None:
-            d = asyncio.run_coroutine_threadsafe(self.queue.get(), self.loop).result()
+            try:
+                d = asyncio.run_coroutine_threadsafe(self.queue.get(), self.loop).result()
+            except:
+                return
             wdata = d[:frames]
             self.buffer = d[frames:]
         elif len(self.buffer) >= frames:
             wdata = self.buffer[:frames]
             self.buffer = self.buffer[frames:]
         elif (len(self.buffer) < frames) and (not self.queue.empty()):
-            d = asyncio.run_coroutine_threadsafe(self.queue.get(), self.loop).result()
+            try:
+                d = asyncio.run_coroutine_threadsafe(self.queue.get(), self.loop).result()
+            except:
+                return
             wdata = self.buffer.copy()
             self.buffer = None
             needed = frames - len(wdata)

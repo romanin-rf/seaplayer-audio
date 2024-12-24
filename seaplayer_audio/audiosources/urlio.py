@@ -1,6 +1,6 @@
 from urllib.request import urlopen
 from tempfile import TemporaryFile
-from io import BufferedReader, BytesIO, DEFAULT_BUFFER_SIZE
+from io import BufferedRandom, BufferedReader, BytesIO, DEFAULT_BUFFER_SIZE
 from typing_extensions import (
     Iterable,
     Self,
@@ -13,7 +13,7 @@ from .._types import URLOpenRet
 class URLIO(BufferedReader):
     # ^ Hidden init methods
 
-    def __open_buffer(self, buffer_type: Literal['temp', 'mem']) -> BufferedReader:
+    def __open_buffer(self, buffer_type: Literal['temp', 'mem']) -> BufferedRandom:
         if buffer_type == 'mem':
             return BytesIO()
         elif buffer_type == 'temp':
