@@ -18,7 +18,7 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
         dtype: Optional[AudioDType]=None,
         closefd: bool=True,
         device: Optional[int]=None,
-        precallback: Optional[Callable[[int], Any]]=None
+        precallback: Optional[Callable[[int], bool]]=None
     ) -> None:
         super().__init__(samplerate, channels, dtype, closefd, device)
         self.queue: Queue[ndarray] = Queue(1)
@@ -29,11 +29,12 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
             device=self.device,
             callback=self.__callback__
         )
-        self.precallback = precallback if (precallback is not None) else (lambda frames: None)
+        self.precallback = precallback if (precallback is not None) else (lambda frames: True)
         self.buffer: Optional[ndarray] = None
     
     def __callback__(self, outdata: ndarray, frames: int, time, status):
-        self.precallback(frames)
+        if not self.precallback(frames):
+            return
         if self.buffer is None:
             try:
                 d = self.queue.get()
@@ -108,7 +109,8 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         dtype: Optional[AudioDType]=None,
         closefd: bool=True,
         loop: Optional[AbstractEventLoop]=None,
-        device: Optional[int]=None
+        device: Optional[int]=None,
+        precallback: Optional[Callable[[int], bool]]=None
     ):
         super().__init__(samplerate, channels, dtype, closefd, loop, device)
         self.queue: AsyncQueue[ndarray] = AsyncQueue(1)
@@ -119,9 +121,12 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
             device=self.device,
             callback=self.__callback__
         )
+        self.precallback = precallback if (precallback is not None) else (lambda frames: True)
         self.buffer: Optional[ndarray] = None
     
     def __callback__(self, outdata: ndarray, frames: int, time, status):
+        if not self.precallback(frames):
+            return
         if self.buffer is None:
             try:
                 d = asyncio.run_coroutine_threadsafe(self.queue.get(), self.loop).result()
