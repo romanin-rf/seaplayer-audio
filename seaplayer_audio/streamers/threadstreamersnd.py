@@ -8,6 +8,7 @@ from asyncio import AbstractEventLoop
 from typing_extensions import Optional
 from .._types import AudioSamplerate, AudioChannels, AudioDType
 from ..base import SoundDeviceStreamerBase, AsyncSoundDeviceStreamerBase, StreamerState
+from ..queues import AsyncQueue, Queue
 
 # ^ Thread Streamer
 
@@ -31,7 +32,7 @@ class ThreadSoundDeviceStreamer(SoundDeviceStreamerBase):
         )
         self.state = StreamerState(StreamerState.LOCKED)
         self.thread = Thread(target=self.run)
-        self.queue: queue.Queue[np.ndarray] = queue.Queue(1)
+        self.queue: Queue[np.ndarray] = Queue(1)
     
     def is_busy(self) -> bool:
         return self.queue.qsize() >= self.queue.maxsize
@@ -62,7 +63,7 @@ class ThreadSoundDeviceStreamer(SoundDeviceStreamerBase):
         if StreamerState.RUNNING in self.state:
             self.state &= ~StreamerState.RUNNING
             self.state |= StreamerState.LOCKED
-            try: self.queue.task_done()
+            try: self.queue.abort()
             except: pass
             self.stream.stop()
             while StreamerState.STARTED in self.state:
@@ -70,7 +71,7 @@ class ThreadSoundDeviceStreamer(SoundDeviceStreamerBase):
     
     def abort(self):
         self.state |= StreamerState.LOCKED
-        try: self.queue.task_done()
+        try: self.queue.abort()
         except: pass
         self.stream.abort()
         self.state &= ~StreamerState.LOCKED
@@ -103,7 +104,7 @@ class AsyncThreadSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         )
         self.task: Optional[asyncio.Task] = None
         self.state = StreamerState(StreamerState.LOCKED)
-        self.queue: asyncio.Queue[np.ndarray] = asyncio.Queue(1)
+        self.queue: AsyncQueue[np.ndarray] = AsyncQueue(1)
     
     async def is_busy(self) -> bool:
         return self.queue.qsize() >= self.queue.maxsize
@@ -134,7 +135,7 @@ class AsyncThreadSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         if StreamerState.RUNNING in self.state:
             self.state &= ~StreamerState.RUNNING
             self.state |= StreamerState.LOCKED
-            try: self.queue.task_done()
+            try: self.queue.abort()
             except: pass
             self.stream.stop()
             while (StreamerState.STARTED in self.state) or (not self.task.done()):
@@ -142,7 +143,7 @@ class AsyncThreadSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
     
     async def abort(self):
         self.state |= StreamerState.LOCKED
-        try: self.queue.task_done()
+        try: self.queue.abort()
         except: pass
         self.stream.abort()
         self.state &= ~StreamerState.LOCKED
