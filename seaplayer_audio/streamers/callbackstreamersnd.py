@@ -82,14 +82,14 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
         if StreamerState.RUNNING in self.state:
             self.state &= ~StreamerState.RUNNING
             self.state |= StreamerState.LOCKED
-            try: self.queue.abort()
-            except: pass
+            try: self.queue.task_done()
+            except ValueError: pass
             self.stream.stop()
     
     def abort(self):
         self.state |= StreamerState.LOCKED
-        try: self.queue.abort()
-        except: pass
+        try: self.queue.task_done()
+        except ValueError: pass
         self.stream.abort()
         self.state &= ~StreamerState.LOCKED
     
@@ -174,14 +174,14 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         if StreamerState.RUNNING in self.state:
             self.state &= ~StreamerState.RUNNING
             self.state |= StreamerState.LOCKED
-            try: await self.queue.abort()
-            except: pass
+            try: self.queue.task_done()
+            except ValueError: pass
             self.stream.stop()
     
     async def abort(self):
         self.state |= StreamerState.LOCKED
-        try: await self.queue.abort()
-        except: pass
+        try: self.queue.task_done()
+        except ValueError: pass
         self.stream.abort()
         self.state &= ~StreamerState.LOCKED
     

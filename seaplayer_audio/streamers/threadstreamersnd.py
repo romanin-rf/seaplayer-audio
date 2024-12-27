@@ -63,16 +63,16 @@ class ThreadSoundDeviceStreamer(SoundDeviceStreamerBase):
         if StreamerState.RUNNING in self.state:
             self.state &= ~StreamerState.RUNNING
             self.state |= StreamerState.LOCKED
-            try: self.queue.abort()
-            except: pass
+            try: self.queue.task_done()
+            except ValueError: pass
             self.stream.stop()
             while StreamerState.STARTED in self.state:
                 time.sleep(0.01)
     
     def abort(self):
         self.state |= StreamerState.LOCKED
-        try: self.queue.abort()
-        except: pass
+        try: self.queue.task_done()
+        except ValueError: pass
         self.stream.abort()
         self.state &= ~StreamerState.LOCKED
     
@@ -135,16 +135,16 @@ class AsyncThreadSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         if StreamerState.RUNNING in self.state:
             self.state &= ~StreamerState.RUNNING
             self.state |= StreamerState.LOCKED
-            try: self.queue.abort()
-            except: pass
+            try: self.queue.task_done()
+            except ValueError: pass
             self.stream.stop()
             while (StreamerState.STARTED in self.state) or (not self.task.done()):
                 await asyncio.sleep(0.01)
     
     async def abort(self):
         self.state |= StreamerState.LOCKED
-        try: self.queue.abort()
-        except: pass
+        try: self.queue.task_done()
+        except ValueError: pass
         self.stream.abort()
         self.state &= ~StreamerState.LOCKED
     
