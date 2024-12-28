@@ -1,11 +1,11 @@
 import asyncio
-from asyncio import AbstractEventLoop
+from queue import Queue
+from asyncio import AbstractEventLoop, Queue as AsyncQueue
 from numpy import ndarray, vstack as npvstack, zeros as npzeros
 from sounddevice import OutputStream
 from typing_extensions import Any, Optional, NoReturn, Callable, deprecated
 from .._types import AudioSamplerate, AudioChannels, AudioDType
 from ..base import AsyncSoundDeviceStreamerBase, SoundDeviceStreamerBase, StreamerState
-from ..queues import AsyncQueue, Queue
 
 # ! Main Class
 class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
@@ -18,7 +18,7 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
         dtype: Optional[AudioDType]=None,
         closefd: bool=True,
         device: Optional[int]=None,
-        precallback: Optional[Callable[[int], bool]]=None
+        precallback: Optional[Callable[[int], Any]]=None
     ) -> None:
         super().__init__(samplerate, channels, dtype, closefd, device)
         self.queue: Queue[ndarray] = Queue(1)
@@ -33,11 +33,10 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
         self.buffer: Optional[ndarray] = None
     
     def __callback__(self, outdata: ndarray, frames: int, time, status):
-        if not self.precallback(frames):
-            return
+        self.precallback(frames)
         if self.buffer is None:
             try:
-                d = self.queue.get()
+                d = self.queue.get_nowait()
             except:
                 return
             wdata = d[:frames]
@@ -45,9 +44,9 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
         elif len(self.buffer) >= frames:
             wdata = self.buffer[:frames]
             self.buffer = self.buffer[frames:]
-        elif (len(self.buffer) < frames) and (not self.queue.qsize() == 0):
+        elif (len(self.buffer) < frames) and (self.queue.qsize() >= 1):
             try:
-                d = self.queue.get()
+                d = self.queue.get_nowait()
             except:
                 return
             wdata = self.buffer.copy()
@@ -59,10 +58,10 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
             wdata = self.buffer.copy()
             self.buffer = None
             needed = frames - len(wdata)
-            wdata = npvstack([wdata, npzeros((needed, 2), dtype=outdata.dtype)])
+            wdata = npvstack([wdata, npzeros((needed, self.channels), dtype=outdata.dtype)])
         else:
             self.buffer = None
-            return
+            wdata = npzeros((frames, self.channels), dtype=outdata.dtype)
         outdata[:] = wdata
     
     def is_busy(self) -> bool:
@@ -82,14 +81,14 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
         if StreamerState.RUNNING in self.state:
             self.state &= ~StreamerState.RUNNING
             self.state |= StreamerState.LOCKED
-            try: self.queue.abort()
-            except: pass
+            try: self.queue.task_done()
+            except ValueError: pass
             self.stream.stop()
     
     def abort(self):
         self.state |= StreamerState.LOCKED
-        try: self.queue.abort()
-        except: pass
+        try: self.queue.task_done()
+        except ValueError: pass
         self.stream.abort()
         self.state &= ~StreamerState.LOCKED
     
@@ -125,11 +124,10 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         self.buffer: Optional[ndarray] = None
     
     def __callback__(self, outdata: ndarray, frames: int, time, status):
-        if not self.precallback(frames):
-            return
+        self.precallback(frames)
         if self.buffer is None:
             try:
-                d = asyncio.run_coroutine_threadsafe(self.queue.get(), self.loop).result()
+                d = asyncio.run_coroutine_threadsafe(self.queue.get_nowait(), self.loop).result()
             except:
                 return
             wdata = d[:frames]
@@ -137,9 +135,9 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         elif len(self.buffer) >= frames:
             wdata = self.buffer[:frames]
             self.buffer = self.buffer[frames:]
-        elif (len(self.buffer) < frames) and (not self.queue.qsize() == 0):
+        elif (len(self.buffer) < frames) and (self.queue.qsize() >= 1):
             try:
-                d = asyncio.run_coroutine_threadsafe(self.queue.get(), self.loop).result()
+                d = asyncio.run_coroutine_threadsafe(self.queue.get_nowait(), self.loop).result()
             except:
                 return
             wdata = self.buffer.copy()
@@ -151,10 +149,10 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
             wdata = self.buffer.copy()
             self.buffer = None
             needed = frames - len(wdata)
-            wdata = npvstack([wdata, npzeros((needed, 2), dtype=outdata.dtype)])
+            wdata = npvstack([wdata, npzeros((needed, self.channels), dtype=outdata.dtype)])
         else:
             self.buffer = None
-            return
+            wdata = npzeros((frames, self.channels), dtype=outdata.dtype)
         outdata[:] = wdata
     
     async def is_busy(self) -> bool:
@@ -174,14 +172,14 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         if StreamerState.RUNNING in self.state:
             self.state &= ~StreamerState.RUNNING
             self.state |= StreamerState.LOCKED
-            try: await self.queue.abort()
-            except: pass
+            try: self.queue.task_done()
+            except ValueError: pass
             self.stream.stop()
     
     async def abort(self):
         self.state |= StreamerState.LOCKED
-        try: await self.queue.abort()
-        except: pass
+        try: self.queue.task_done()
+        except ValueError: pass
         self.stream.abort()
         self.state &= ~StreamerState.LOCKED
     

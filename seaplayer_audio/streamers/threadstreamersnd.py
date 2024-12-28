@@ -3,12 +3,12 @@ import queue
 import asyncio
 import numpy as np
 import sounddevice as sd
+from queue import Queue
 from threading import Thread
-from asyncio import AbstractEventLoop
+from asyncio import AbstractEventLoop, Queue as AsyncQueue
 from typing_extensions import Optional
 from .._types import AudioSamplerate, AudioChannels, AudioDType
 from ..base import SoundDeviceStreamerBase, AsyncSoundDeviceStreamerBase, StreamerState
-from ..queues import AsyncQueue, Queue
 
 # ^ Thread Streamer
 
@@ -63,16 +63,16 @@ class ThreadSoundDeviceStreamer(SoundDeviceStreamerBase):
         if StreamerState.RUNNING in self.state:
             self.state &= ~StreamerState.RUNNING
             self.state |= StreamerState.LOCKED
-            try: self.queue.abort()
-            except: pass
+            try: self.queue.task_done()
+            except ValueError: pass
             self.stream.stop()
             while StreamerState.STARTED in self.state:
                 time.sleep(0.01)
     
     def abort(self):
         self.state |= StreamerState.LOCKED
-        try: self.queue.abort()
-        except: pass
+        try: self.queue.task_done()
+        except ValueError: pass
         self.stream.abort()
         self.state &= ~StreamerState.LOCKED
     
@@ -135,16 +135,16 @@ class AsyncThreadSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         if StreamerState.RUNNING in self.state:
             self.state &= ~StreamerState.RUNNING
             self.state |= StreamerState.LOCKED
-            try: self.queue.abort()
-            except: pass
+            try: self.queue.task_done()
+            except ValueError: pass
             self.stream.stop()
             while (StreamerState.STARTED in self.state) or (not self.task.done()):
                 await asyncio.sleep(0.01)
     
     async def abort(self):
         self.state |= StreamerState.LOCKED
-        try: self.queue.abort()
-        except: pass
+        try: self.queue.task_done()
+        except ValueError: pass
         self.stream.abort()
         self.state &= ~StreamerState.LOCKED
     
