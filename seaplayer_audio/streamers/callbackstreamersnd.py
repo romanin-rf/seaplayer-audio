@@ -39,8 +39,11 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
                 d = self.queue.get_nowait()
             except:
                 return
-            wdata = d[:frames]
-            self.buffer = d[frames:]
+            if len(d) >= frames:
+                wdata = d[:frames]
+                self.buffer = d[frames:]
+            else:
+                wdata = npvstack([d, npzeros((frames - len(d), self.channels), dtype=outdata.dtype)])
         elif len(self.buffer) >= frames:
             wdata = self.buffer[:frames]
             self.buffer = self.buffer[frames:]
@@ -54,6 +57,8 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
             needed = frames - len(wdata)
             wdata = npvstack([wdata, d[:needed]])
             self.buffer = d[needed:]
+            if len(wdata) < frames:
+                wdata = npvstack([wdata, npzeros((frames - len(wdata), self.channels), dtype=outdata.dtype)])
         elif (len(self.buffer) < frames) and self.queue.empty():
             wdata = self.buffer.copy()
             self.buffer = None
@@ -130,8 +135,11 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
                 d = asyncio.run_coroutine_threadsafe(self.queue.get_nowait(), self.loop).result()
             except:
                 return
-            wdata = d[:frames]
-            self.buffer = d[frames:]
+            if len(d) >= frames:
+                wdata = d[:frames]
+                self.buffer = d[frames:]
+            else:
+                wdata = npvstack([d, npzeros((frames - len(d), self.channels), dtype=outdata.dtype)])
         elif len(self.buffer) >= frames:
             wdata = self.buffer[:frames]
             self.buffer = self.buffer[frames:]
@@ -145,6 +153,8 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
             needed = frames - len(wdata)
             wdata = npvstack([wdata, d[:needed]])
             self.buffer = d[needed:]
+            if len(wdata) < frames:
+                wdata = npvstack([wdata, npzeros((frames - len(wdata), self.channels), dtype=outdata.dtype)])
         elif (len(self.buffer) < frames) and self.queue.empty():
             wdata = self.buffer.copy()
             self.buffer = None
