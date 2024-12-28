@@ -1,11 +1,11 @@
 import asyncio
-from asyncio import AbstractEventLoop
+from queue import Queue
+from asyncio import AbstractEventLoop, Queue as AsyncQueue
 from numpy import ndarray, vstack as npvstack, zeros as npzeros
 from sounddevice import OutputStream
 from typing_extensions import Any, Optional, NoReturn, Callable, deprecated
 from .._types import AudioSamplerate, AudioChannels, AudioDType
 from ..base import AsyncSoundDeviceStreamerBase, SoundDeviceStreamerBase, StreamerState
-from ..queues import AsyncQueue, Queue
 
 # ! Main Class
 class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
@@ -18,7 +18,7 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
         dtype: Optional[AudioDType]=None,
         closefd: bool=True,
         device: Optional[int]=None,
-        precallback: Optional[Callable[[int], bool]]=None
+        precallback: Optional[Callable[[int], Any]]=None
     ) -> None:
         super().__init__(samplerate, channels, dtype, closefd, device)
         self.queue: Queue[ndarray] = Queue(1)
@@ -29,23 +29,25 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
             device=self.device,
             callback=self.__callback__
         )
-        self.precallback = precallback if (precallback is not None) else (lambda frames: True)
+        self.precallback = precallback if (precallback is not None) else (lambda frames: None)
         self.buffer: Optional[ndarray] = None
     
     def __callback__(self, outdata: ndarray, frames: int, time, status):
-        if not self.precallback(frames):
-            return
+        self.precallback(frames)
         if self.buffer is None:
             try:
                 d = self.queue.get()
             except:
                 return
-            wdata = d[:frames]
-            self.buffer = d[frames:]
+            if len(d) == frames:
+                wdata = d
+            else:
+                wdata = d[:frames]
+                self.buffer = d[frames:]
         elif len(self.buffer) >= frames:
             wdata = self.buffer[:frames]
             self.buffer = self.buffer[frames:]
-        elif (len(self.buffer) < frames) and (not self.queue.qsize() == 0):
+        elif (len(self.buffer) < frames) and (self.queue.qsize() != 0):
             try:
                 d = self.queue.get()
             except:
@@ -125,19 +127,21 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         self.buffer: Optional[ndarray] = None
     
     def __callback__(self, outdata: ndarray, frames: int, time, status):
-        if not self.precallback(frames):
-            return
+        self.precallback(frames)
         if self.buffer is None:
             try:
                 d = asyncio.run_coroutine_threadsafe(self.queue.get(), self.loop).result()
             except:
                 return
-            wdata = d[:frames]
-            self.buffer = d[frames:]
+            if len(d) == frames:
+                wdata = d
+            else:
+                wdata = d[:frames]
+                self.buffer = d[frames:]
         elif len(self.buffer) >= frames:
             wdata = self.buffer[:frames]
             self.buffer = self.buffer[frames:]
-        elif (len(self.buffer) < frames) and (not self.queue.qsize() == 0):
+        elif (len(self.buffer) < frames) and (self.queue.qsize() != 0):
             try:
                 d = asyncio.run_coroutine_threadsafe(self.queue.get(), self.loop).result()
             except:

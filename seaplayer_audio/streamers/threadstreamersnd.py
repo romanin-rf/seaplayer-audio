@@ -3,12 +3,12 @@ import queue
 import asyncio
 import numpy as np
 import sounddevice as sd
+from queue import Queue
 from threading import Thread
-from asyncio import AbstractEventLoop
+from asyncio import AbstractEventLoop, Queue as AsyncQueue
 from typing_extensions import Optional
 from .._types import AudioSamplerate, AudioChannels, AudioDType
 from ..base import SoundDeviceStreamerBase, AsyncSoundDeviceStreamerBase, StreamerState
-from ..queues import AsyncQueue, Queue
 
 # ^ Thread Streamer
 
