@@ -57,6 +57,15 @@ class StreamerBase(Reprable):
     def is_busy(self) -> bool:
         return False
     
+    def reconfigure(self, 
+        samplerate: Optional[AudioSamplerate]=None,
+        channels: Optional[AudioChannels]=None,
+        dtype: Optional[AudioDType]=None,
+    ) -> None:
+        self.samplerate = samplerate or 44100
+        self.channels = channels or 2
+        self.dtype = dtype or 'float32'
+    
     def run(self) -> None:
         raise NotImplementedError
     
@@ -119,13 +128,13 @@ class AsyncStreamerBase(StreamerBase):
             await self.abort()
             await self.stop()
     
-    async def set_lock(self, __value: bool) -> None:
+    def set_lock(self, __value: bool) -> None:
         if __value:
             self.state |= StreamerState.LOCKED
         else:
             self.state &= ~StreamerState.LOCKED
     
-    async def is_busy(self) -> bool:
+    def is_busy(self) -> bool:
         return False
     
     def run(self) -> None:
