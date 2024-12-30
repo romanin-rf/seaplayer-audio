@@ -2,6 +2,7 @@ import os
 import asyncio
 from numpy import ndarray
 from soundfile import SoundFile
+from threading import Semaphore
 # * Typing
 from types import TracebackType
 from typing_extensions import Optional, Type
@@ -31,6 +32,7 @@ class FileAudioSource(AudioSourceBase):
     ) -> None:
         self.name = os.path.abspath(str(filepath))
         self.sfio = SoundFile(self.name, 'r', samplerate, channels, subtype, endian, format, closefd=closefd)
+        self.semaphore = Semaphore(1)
         self.minfo = get_mutagen_info(self.name)
         self.metadata = get_audio_metadata(self.sfio, self.minfo)
         self.closefd = closefd
@@ -133,7 +135,10 @@ class FileAudioSource(AudioSourceBase):
         Returns:
             ndarray: If out is specified, the data is written into the given array instead of creating a new array. In this case, the arguments *dtype* and *always_2d* are silently ignored! If *frames* is not given, it is obtained from the length of out.
         """
-        return self.sfio.read(frames, dtype, always_2d, **extra)
+        self.semaphore.acquire()
+        result = self.sfio.read(frames, dtype, always_2d, **extra)
+        self.semaphore.release()
+        return result
     
     def readline(self, seconds: float=-1.0, dtype: AudioDType='float32', always_2d: bool=False, **extra: object):
         """Read from the file and return data (*1 second*) as NumPy array.
@@ -144,7 +149,10 @@ class FileAudioSource(AudioSourceBase):
         Returns:
             ndarray: If out is specified, the data is written into the given array instead of creating a new array. In this case, the arguments *dtype* and *always_2d* are silently ignored! If *frames* is not given, it is obtained from the length of out.
         """
-        return self.sfio.read(int(seconds * self.sfio.samplerate), dtype, always_2d, **extra)
+        self.semaphore.acquire()
+        result = self.sfio.read(int(seconds * self.sfio.samplerate), dtype, always_2d, **extra)
+        self.semaphore.release()
+        return result
     
     def seek(self, frames: int, whence=0) -> int:
         """Set the read position.
@@ -159,7 +167,10 @@ class FileAudioSource(AudioSourceBase):
         Returns:
             int: The new absolute read position in frames.
         """
-        return self.sfio.seek(frames, whence)
+        self.semaphore.acquire()
+        result = self.sfio.seek(frames, whence)
+        self.semaphore.release()
+        return result
     
     def tell(self) -> int:
         """Return the current read position.
@@ -207,10 +218,10 @@ class AsyncFileAudioSource(AsyncAudioSourceBase, FileAudioSource):
         if self.closefd:
             await self.close()
 
-    async def seekable(self):
+    def seekable(self):
         return super().seekable()
     
-    async def readable(self):
+    def readable(self):
         return not self.closed
 
     async def read(
@@ -220,13 +231,22 @@ class AsyncFileAudioSource(AsyncAudioSourceBase, FileAudioSource):
         always_2d: bool=False,
         **extra: object
     ) -> ndarray:
-        return await aiorun(self.loop, super().read, frames, dtype, always_2d, **extra)
+        self.semaphore.acquire()
+        result = await aiorun(self.loop, super().read, frames, dtype, always_2d, **extra)
+        self.semaphore.release()
+        return result
     
     async def readline(self, seconds: float=-1.0, dtype: AudioDType='float32', always_2d: bool=False, **extra) -> ndarray:
-        return await aiorun(self.loop, super().readline, seconds, dtype, always_2d, **extra)
+        self.semaphore.acquire()
+        result = await aiorun(self.loop, super().readline, seconds, dtype, always_2d, **extra)
+        self.semaphore.release()
+        return result
 
     async def seek(self, frames: int, whence=0) -> int:
-        return await aiorun(self.loop, super().seek, frames, whence)
+        self.semaphore.acquire()
+        result = await aiorun(self.loop, super().seek, frames, whence)
+        self.semaphore.release()
+        return result
     
     async def tell(self) -> int:
         return await aiorun(self.loop, super().tell)

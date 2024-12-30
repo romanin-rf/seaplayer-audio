@@ -37,13 +37,34 @@ class ThreadSoundDeviceStreamer(SoundDeviceStreamerBase):
     def is_busy(self) -> bool:
         return self.queue.qsize() >= self.queue.maxsize
     
+    def reconfigure(
+        self,
+        samplerate: Optional[AudioSamplerate]=None,
+        channels: Optional[AudioChannels]=None,
+        dtype: Optional[AudioDType]=None,
+        *,
+        restore_state: bool=True
+    ) -> None:
+        super().reconfigure(samplerate, channels, dtype)
+        state = self.state
+        if StreamerState.RUNNING in self.state:
+            self.stop()
+        self.stream = sd.OutputStream(
+            samplerate=self.samplerate,
+            channels=self.channels,
+            dtype=self.dtype,
+            device=self.device
+        )
+        if restore_state and (StreamerState.RUNNING in state):
+            self.start()
+    
     def run(self) -> None:
         if not self.stream.active:
             self.stream.start()
         self.state |= StreamerState.STARTED
         while StreamerState.RUNNING in self.state:
             try:
-                data = self.queue.get(timeout=0.01)
+                data = self.queue.get_nowait()
                 self.stream.write(data)
             except queue.Empty:
                 pass
@@ -106,8 +127,29 @@ class AsyncThreadSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         self.state = StreamerState(StreamerState.LOCKED)
         self.queue: AsyncQueue[np.ndarray] = AsyncQueue(1)
     
-    async def is_busy(self) -> bool:
+    def is_busy(self) -> bool:
         return self.queue.qsize() >= self.queue.maxsize
+    
+    def reconfigure(
+        self,
+        samplerate: Optional[AudioSamplerate]=None,
+        channels: Optional[AudioChannels]=None,
+        dtype: Optional[AudioDType]=None,
+        *,
+        restore_state: bool=True
+    ) -> None:
+        super().reconfigure(samplerate, channels, dtype)
+        state = self.state
+        if StreamerState.RUNNING in self.state:
+            asyncio.run_coroutine_threadsafe(self.stop(), self.loop).result()
+        self.stream = sd.OutputStream(
+            samplerate=self.samplerate,
+            channels=self.channels,
+            dtype=self.dtype,
+            device=self.device
+        )
+        if restore_state and (StreamerState.RUNNING in state):
+            asyncio.run_coroutine_threadsafe(self.start(), self.loop).result()
     
     def run(self) -> None:
         if not self.stream.active:
@@ -115,7 +157,7 @@ class AsyncThreadSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         self.state |= StreamerState.STARTED
         while StreamerState.RUNNING in self.state:
             try:
-                data = asyncio.run_coroutine_threadsafe(self.queue.get(timeout=0.01), self.loop).result()
+                data = self.queue.get_nowait()
                 self.stream.write(data)
             except queue.Empty:
                 pass

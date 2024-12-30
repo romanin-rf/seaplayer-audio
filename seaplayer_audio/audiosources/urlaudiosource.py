@@ -1,6 +1,9 @@
 from numpy import ndarray
 from soundfile import SoundFile
+from threading import Semaphore
+# > Typing
 from typing_extensions import Optional, Self
+# > Local Imports
 from .._types import AudioSamplerate, AudioChannels, AudioSubType, AudioFormat, AudioEndians, AudioDType
 from ..base import AudioSourceBase
 from ..functions import get_mutagen_info, get_audio_metadata
@@ -27,6 +30,7 @@ class URLAudioSource(AudioSourceBase):
         self.sfio = SoundFile(self.urlio, 'r', samplerate, channels, subtype, endian, format, closefd=closefd)
         self.minfo = get_mutagen_info(self.name)
         self.metadata = get_audio_metadata(self.sfio, self.minfo)
+        self.semaphore = Semaphore(1)
         self.closefd = closefd
     
     # ^ Dander Methods
@@ -122,7 +126,10 @@ class URLAudioSource(AudioSourceBase):
         Returns:
             ndarray: If out is specified, the data is written into the given array instead of creating a new array. In this case, the arguments *dtype* and *always_2d* are silently ignored! If *frames* is not given, it is obtained from the length of out.
         """
-        return self.sfio.read(frames, dtype, always_2d, **extra)
+        self.semaphore.acquire()
+        result = self.sfio.read(frames, dtype, always_2d, **extra)
+        self.semaphore.release()
+        return result
     
     def readline(self, seconds: float=-1.0, dtype: AudioDType='float32', always_2d: bool=False, **extra: object):
         """Read from the file and return data (*1 second*) as NumPy array.
@@ -133,7 +140,10 @@ class URLAudioSource(AudioSourceBase):
         Returns:
             ndarray: If out is specified, the data is written into the given array instead of creating a new array. In this case, the arguments *dtype* and *always_2d* are silently ignored! If *frames* is not given, it is obtained from the length of out.
         """
-        return self.sfio.read(int(seconds * self.sfio.samplerate), dtype, always_2d, **extra)
+        self.semaphore.acquire()
+        result = self.sfio.read(int(seconds * self.sfio.samplerate), dtype, always_2d, **extra)
+        self.semaphore.release()
+        return result
     
     def seek(self, frames: int, whence=0) -> int:
         """Set the read position.
@@ -148,7 +158,10 @@ class URLAudioSource(AudioSourceBase):
         Returns:
             int: The new absolute read position in frames.
         """
-        return self.sfio.seek(frames, whence)
+        self.semaphore.acquire()
+        result = self.sfio.seek(frames, whence)
+        self.semaphore.release()
+        return result
     
     def tell(self) -> int:
         """Return the current read position.

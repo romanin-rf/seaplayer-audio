@@ -1,3 +1,4 @@
+import queue
 import asyncio
 from queue import Queue
 from asyncio import AbstractEventLoop, Queue as AsyncQueue
@@ -8,6 +9,7 @@ from .._types import AudioSamplerate, AudioChannels, AudioDType
 from ..base import AsyncSoundDeviceStreamerBase, SoundDeviceStreamerBase, StreamerState
 
 # ! Main Class
+
 class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
     __steamer_type__ = 'callback-sounddevice'
     
@@ -37,7 +39,7 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
         if self.buffer is None:
             try:
                 d = self.queue.get_nowait()
-            except:
+            except queue.Empty:
                 return
             if len(d) >= frames:
                 wdata = d[:frames]
@@ -50,7 +52,7 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
         elif (len(self.buffer) < frames) and (self.queue.qsize() >= 1):
             try:
                 d = self.queue.get_nowait()
-            except:
+            except queue.Empty:
                 return
             wdata = self.buffer.copy()
             self.buffer = None
@@ -71,6 +73,28 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
     
     def is_busy(self) -> bool:
         return self.queue.qsize() >= 1
+    
+    def reconfigure(
+        self,
+        samplerate: Optional[AudioSamplerate]=None,
+        channels: Optional[AudioChannels]=None,
+        dtype: Optional[AudioDType]=None,
+        *,
+        restore_state: bool=True
+    ) -> None:
+        super().reconfigure(samplerate, channels, dtype)
+        state = self.state
+        if StreamerState.RUNNING in self.state:
+            self.stop()
+        self.stream = OutputStream(
+            samplerate=self.samplerate,
+            channels=self.channels,
+            dtype=self.dtype,
+            device=self.device,
+            callback=self.__callback__
+        )
+        if restore_state and (StreamerState.RUNNING in state):
+            self.start()
     
     @deprecated("!!! NOT IMPLEMENTED !!!")
     def run(self) -> NoReturn:
@@ -132,8 +156,8 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         self.precallback(frames)
         if self.buffer is None:
             try:
-                d = asyncio.run_coroutine_threadsafe(self.queue.get_nowait(), self.loop).result()
-            except:
+                d = self.queue.get_nowait()
+            except queue.Empty:
                 return
             if len(d) >= frames:
                 wdata = d[:frames]
@@ -145,8 +169,8 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
             self.buffer = self.buffer[frames:]
         elif (len(self.buffer) < frames) and (self.queue.qsize() >= 1):
             try:
-                d = asyncio.run_coroutine_threadsafe(self.queue.get_nowait(), self.loop).result()
-            except:
+                d = self.queue.get_nowait()
+            except queue.Empty:
                 return
             wdata = self.buffer.copy()
             self.buffer = None
@@ -165,8 +189,30 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
             wdata = npzeros((frames, self.channels), dtype=outdata.dtype)
         outdata[:] = wdata
     
-    async def is_busy(self) -> bool:
+    def is_busy(self) -> bool:
         return self.queue.qsize() >= self.queue.maxsize
+    
+    def reconfigure(
+        self,
+        samplerate: Optional[AudioSamplerate]=None,
+        channels: Optional[AudioChannels]=None,
+        dtype: Optional[AudioDType]=None,
+        *,
+        restore_state: bool=True
+    ) -> None:
+        super().reconfigure(samplerate, channels, dtype)
+        state = self.state
+        if StreamerState.RUNNING in self.state:
+            asyncio.run_coroutine_threadsafe(self.stop(), self.loop).result()
+        self.stream = OutputStream(
+            samplerate=self.samplerate,
+            channels=self.channels,
+            dtype=self.dtype,
+            device=self.device,
+            callback=self.__callback__
+        )
+        if restore_state and (StreamerState.RUNNING in state):
+            asyncio.run_coroutine_threadsafe(self.start(), self.loop).result()
     
     @deprecated("!!! NOT IMPLEMENTED !!!")
     async def run(self) -> NoReturn:
