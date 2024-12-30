@@ -97,7 +97,7 @@ class AsyncAudioSourceBase(AudioSourceBase):
         """!!! NOT IMPLEMENTED !!!"""
         raise NotImplementedError
     
-    async def writable(self) -> bool:
+    def writable(self) -> bool:
         return False
     
     @deprecated('!!! NOT IMPLEMENTED !!!')
