@@ -35,8 +35,8 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
         self.buffer: Optional[ndarray] = None
     
     def __callback__(self, outdata: ndarray, frames: int, time, status):
-        self.precallback(frames)
         if self.buffer is None:
+            self.precallback(frames)
             try:
                 d = self.queue.get_nowait()
             except queue.Empty:
@@ -50,6 +50,7 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
             wdata = self.buffer[:frames]
             self.buffer = self.buffer[frames:]
         elif (len(self.buffer) < frames) and (self.queue.qsize() >= 1):
+            self.precallback(frames)
             try:
                 d = self.queue.get_nowait()
             except queue.Empty:
@@ -153,8 +154,8 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         self.buffer: Optional[ndarray] = None
     
     def __callback__(self, outdata: ndarray, frames: int, time, status):
-        self.precallback(frames)
         if self.buffer is None:
+            self.precallback(frames)
             try:
                 d = self.queue.get_nowait()
             except queue.Empty:
@@ -168,6 +169,7 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
             wdata = self.buffer[:frames]
             self.buffer = self.buffer[frames:]
         elif (len(self.buffer) < frames) and (self.queue.qsize() >= 1):
+            self.precallback(frames)
             try:
                 d = self.queue.get_nowait()
             except queue.Empty:
