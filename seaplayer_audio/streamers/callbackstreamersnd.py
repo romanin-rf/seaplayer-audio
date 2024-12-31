@@ -35,40 +35,38 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
         self.buffer: Optional[ndarray] = None
     
     def __callback__(self, outdata: ndarray, frames: int, time, status):
-        self.precallback(frames)
+        wdata = ndarray((0, self.channels), dtype=outdata.dtype)
         if self.buffer is None:
+            self.precallback(frames)
             try:
                 d = self.queue.get_nowait()
             except queue.Empty:
                 return
-            if len(d) >= frames:
-                wdata = d[:frames]
-                self.buffer = d[frames:]
-            else:
-                wdata = npvstack([d, npzeros((frames - len(d), self.channels), dtype=outdata.dtype)])
-        elif len(self.buffer) >= frames:
-            wdata = self.buffer[:frames]
+            wdata = npvstack([wdata, d[:frames]], dtype=outdata.dtype)
+            self.buffer = d[frames:]
+        elif len(self.buffer) == frames:
+            wdata = npvstack([wdata, self.buffer.copy()], dtype=outdata.dtype)
+            self.buffer = None
+        elif len(self.buffer) > frames:
+            wdata = npvstack([wdata, self.buffer[:frames]], dtype=outdata.dtype)
             self.buffer = self.buffer[frames:]
         elif (len(self.buffer) < frames) and (self.queue.qsize() >= 1):
-            try:
-                d = self.queue.get_nowait()
-            except queue.Empty:
-                return
-            wdata = self.buffer.copy()
-            self.buffer = None
-            needed = frames - len(wdata)
-            wdata = npvstack([wdata, d[:needed]])
-            self.buffer = d[needed:]
-            if len(wdata) < frames:
-                wdata = npvstack([wdata, npzeros((frames - len(wdata), self.channels), dtype=outdata.dtype)])
+            while len(wdata) < frames:
+                self.precallback(frames)
+                try:
+                    d = self.queue.get_nowait()
+                except queue.Empty:
+                    continue
+                needed = frames - len(self.buffer) - len(wdata)
+                wdata = npvstack([wdata, self.buffer.copy(), d[:needed]], dtype=outdata.dtype)
+                self.buffer = d[needed:]
         elif (len(self.buffer) < frames) and self.queue.empty():
-            wdata = self.buffer.copy()
+            needed = frames - len(self.buffer) - len(wdata)
+            wdata = npvstack([wdata, self.buffer.copy(), npzeros((needed, self.channels), dtype=outdata.dtype)], dtype=outdata.dtype)
             self.buffer = None
-            needed = frames - len(wdata)
-            wdata = npvstack([wdata, npzeros((needed, self.channels), dtype=outdata.dtype)])
         else:
             self.buffer = None
-            wdata = npzeros((frames, self.channels), dtype=outdata.dtype)
+            wdata = npvstack([wdata, npzeros((frames, self.channels), dtype=outdata.dtype)], dtype=outdata.dtype)
         outdata[:] = wdata
     
     def is_busy(self) -> bool:
@@ -153,40 +151,38 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         self.buffer: Optional[ndarray] = None
     
     def __callback__(self, outdata: ndarray, frames: int, time, status):
-        self.precallback(frames)
+        wdata = ndarray((0, self.channels), dtype=outdata.dtype)
         if self.buffer is None:
+            self.precallback(frames)
             try:
                 d = self.queue.get_nowait()
             except queue.Empty:
                 return
-            if len(d) >= frames:
-                wdata = d[:frames]
-                self.buffer = d[frames:]
-            else:
-                wdata = npvstack([d, npzeros((frames - len(d), self.channels), dtype=outdata.dtype)])
-        elif len(self.buffer) >= frames:
-            wdata = self.buffer[:frames]
+            wdata = npvstack([wdata, d[:frames]], dtype=outdata.dtype)
+            self.buffer = d[frames:]
+        elif len(self.buffer) == frames:
+            wdata = npvstack([wdata, self.buffer.copy()], dtype=outdata.dtype)
+            self.buffer = None
+        elif len(self.buffer) > frames:
+            wdata = npvstack([wdata, self.buffer[:frames]], dtype=outdata.dtype)
             self.buffer = self.buffer[frames:]
         elif (len(self.buffer) < frames) and (self.queue.qsize() >= 1):
-            try:
-                d = self.queue.get_nowait()
-            except queue.Empty:
-                return
-            wdata = self.buffer.copy()
-            self.buffer = None
-            needed = frames - len(wdata)
-            wdata = npvstack([wdata, d[:needed]])
-            self.buffer = d[needed:]
-            if len(wdata) < frames:
-                wdata = npvstack([wdata, npzeros((frames - len(wdata), self.channels), dtype=outdata.dtype)])
+            while len(wdata) < frames:
+                self.precallback(frames)
+                try:
+                    d = self.queue.get_nowait()
+                except queue.Empty:
+                    continue
+                needed = frames - len(self.buffer) - len(wdata)
+                wdata = npvstack([wdata, self.buffer.copy(), d[:needed]], dtype=outdata.dtype)
+                self.buffer = d[needed:]
         elif (len(self.buffer) < frames) and self.queue.empty():
-            wdata = self.buffer.copy()
+            needed = frames - len(self.buffer) - len(wdata)
+            wdata = npvstack([wdata, self.buffer.copy(), npzeros((needed, self.channels), dtype=outdata.dtype)], dtype=outdata.dtype)
             self.buffer = None
-            needed = frames - len(wdata)
-            wdata = npvstack([wdata, npzeros((needed, self.channels), dtype=outdata.dtype)])
         else:
             self.buffer = None
-            wdata = npzeros((frames, self.channels), dtype=outdata.dtype)
+            wdata = npvstack([wdata, npzeros((frames, self.channels), dtype=outdata.dtype)], dtype=outdata.dtype)
         outdata[:] = wdata
     
     def is_busy(self) -> bool:
