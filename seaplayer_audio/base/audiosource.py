@@ -41,45 +41,45 @@ class AudioSourceBase(IOBase, Reprable):
     
     # ^ Methods
     
-    @deprecated('!!! NOT IMPLEMENTED !!!')
+    @deprecated('NOT IMPLEMENTED')
     def __iter__(self) -> NoReturn:
-        """!!! NOT IMPLEMENTED !!!"""
+        """NOT IMPLEMENTED"""
         raise NotImplementedError
     
-    @deprecated('!!! NOT IMPLEMENTED !!!')
+    @deprecated('NOT IMPLEMENTED')
     def __next__(self) -> NoReturn:
-        """!!! NOT IMPLEMENTED !!!"""
+        """NOT IMPLEMENTED"""
         raise NotImplementedError
     
     def writable(self) -> bool:
         return False
     
-    @deprecated('!!! NOT IMPLEMENTED !!!')
+    @deprecated('NOT IMPLEMENTED')
     def write(self, *args, **kwargs) -> NoReturn:
-        """!!! NOT IMPLEMENTED !!!"""
+        """NOT IMPLEMENTED"""
         raise OSError
     
-    @deprecated('!!! NOT IMPLEMENTED !!!')
+    @deprecated('NOT IMPLEMENTED')
     def writelines(self, lines: Iterable[Any]) -> NoReturn:
-        """!!! NOT IMPLEMENTED !!!"""
+        """NOT IMPLEMENTED"""
         raise OSError
     
-    @deprecated('!!! NOT IMPLEMENTED !!!')
+    @deprecated('NOT IMPLEMENTED')
     def truncate(self, size: Optional[int]=None) -> NoReturn:
-        """!!! NOT IMPLEMENTED !!!"""
+        """NOT IMPLEMENTED"""
         raise NotImplementedError
     
     def isatty(self) -> bool:
         return False
     
-    @deprecated('!!! NOT IMPLEMENTED !!!')
+    @deprecated('NOT IMPLEMENTED')
     def flush(self) -> NoReturn:
-        """!!! NOT IMPLEMENTED !!!"""
+        """NOT IMPLEMENTED"""
         raise NotImplementedError
     
-    @deprecated('!!! NOT IMPLEMENTED !!!')
+    @deprecated('NOT IMPLEMENTED')
     def fileno(self) -> NoReturn:
-        """!!! NOT IMPLEMENTED !!!"""
+        """NOT IMPLEMENTED"""
         raise OSError
 
 # ! Audio Source Class (async)
@@ -87,43 +87,43 @@ class AudioSourceBase(IOBase, Reprable):
 class AsyncAudioSourceBase(AudioSourceBase):
     """Base class for working with audio sources (async)."""
     
-    @deprecated('!!! NOT IMPLEMENTED !!!')
+    @deprecated('NOT IMPLEMENTED')
     async def __aiter__(self) -> NoReturn:
-        """!!! NOT IMPLEMENTED !!!"""
+        """NOT IMPLEMENTED"""
         raise NotImplementedError
     
-    @deprecated('!!! NOT IMPLEMENTED !!!')
+    @deprecated('NOT IMPLEMENTED')
     async def __anext__(self) -> NoReturn:
-        """!!! NOT IMPLEMENTED !!!"""
+        """NOT IMPLEMENTED"""
         raise NotImplementedError
     
     def writable(self) -> bool:
         return False
     
-    @deprecated('!!! NOT IMPLEMENTED !!!')
+    @deprecated('NOT IMPLEMENTED')
     async def write(self, *args, **kwargs) -> NoReturn:
-        """!!! NOT IMPLEMENTED !!!"""
+        """NOT IMPLEMENTED"""
         raise OSError
     
-    @deprecated('!!! NOT IMPLEMENTED !!!')
+    @deprecated('NOT IMPLEMENTED')
     async def writelines(self, lines: Iterable[Any]) -> NoReturn:
-        """!!! NOT IMPLEMENTED !!!"""
+        """NOT IMPLEMENTED"""
         raise OSError
     
-    @deprecated('!!! NOT IMPLEMENTED !!!')
+    @deprecated('NOT IMPLEMENTED')
     async def truncate(self, size = ...) -> NoReturn:
-        """!!! NOT IMPLEMENTED !!!"""
+        """NOT IMPLEMENTED"""
         raise NotImplementedError
     
     async def isatty(self) -> bool:
         return False
     
-    @deprecated('!!! NOT IMPLEMENTED !!!')
+    @deprecated('NOT IMPLEMENTED')
     async def flush(self) -> NoReturn:
-        """!!! NOT IMPLEMENTED !!!"""
+        """NOT IMPLEMENTED"""
         raise NotImplementedError
     
-    @deprecated('!!! NOT IMPLEMENTED !!!')
+    @deprecated('NOT IMPLEMENTED')
     async def fileno(self) -> NoReturn:
-        """!!! NOT IMPLEMENTED !!!"""
+        """NOT IMPLEMENTED"""
         raise OSError

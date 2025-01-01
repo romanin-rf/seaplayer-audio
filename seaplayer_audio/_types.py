@@ -1,7 +1,10 @@
+import numpy as np
 from pathlib import Path
 from email.message import Message
 from io import BufferedReader
 from http.client import HTTPResponse
+from numpy import ndarray
+# > Typing
 from typing_extensions import (
     Tuple, Any,
     Coroutine, Awaitable, Callable,
@@ -25,13 +28,17 @@ DType: TypeAlias = Literal[
     'float32', 'float64', 'float80', 'float96', 'float128', 'float256'
 ]
 
+# ! Numpy Types
+
+SupportNDArray = ndarray[Any, Union[np.int16, np.int32, np.float32, np.float64]]
+
 # ! IO Types
 
 FilePathType: TypeAlias     = Union[str, Path]
 
 # ! Audio Types
 
-AudioChannels: TypeAlias        = Literal[1, 2]
+AudioChannels: TypeAlias        = Literal[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12]
 AudioSamplerate: TypeAlias      = Literal[
     8000, 11025, 16000, 22050, 32000, 44100, 48000, 96000, 192000
 ]

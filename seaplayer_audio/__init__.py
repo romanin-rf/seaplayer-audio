@@ -3,19 +3,22 @@ from .base import (
     AsyncStreamerBase, StreamerBase, StreamerState,
     AsyncSoundDeviceStreamerBase, SoundDeviceStreamerBase
 )
-from .audiosources import FileAudioSource, AsyncFileAudioSource
+from .audiosources import (
+    FileAudioSource, AsyncFileAudioSource
+)
 from .streamers import (
     ThreadSoundDeviceStreamer, AsyncThreadSoundDeviceStreamer,
-    CallbackSoundDeviceStreamer, AsyncCallbackSoundDeviceStreamer
+    CallbackSoundDeviceStreamer, AsyncCallbackSoundDeviceStreamer, CallbackSettingsFlag
 )
 from ._types import AudioSamplerate, AudioChannels, AudioDType, AudioFormat, AudioSubType, AudioEndians
+
 
 __all__ = [
     'AsyncAudioSourceBase', 'AudioSourceBase', 'AudioSourceMetadata',
     'AsyncStreamerBase', 'StreamerBase', 'StreamerState',
     'AsyncSoundDeviceStreamerBase', 'SoundDeviceStreamerBase',
     'ThreadSoundDeviceStreamer', 'AsyncThreadSoundDeviceStreamer',
-    'CallbackSoundDeviceStreamer', 'AsyncCallbackSoundDeviceStreamer',
+    'CallbackSoundDeviceStreamer', 'AsyncCallbackSoundDeviceStreamer', 'CallbackSettingsFlag',
     'FileAudioSource', 'AsyncFileAudioSource',
     'AudioSamplerate', 'AudioChannels', 'AudioDType', 'AudioFormat', 'AudioSubType', 'AudioEndians'
 ]
