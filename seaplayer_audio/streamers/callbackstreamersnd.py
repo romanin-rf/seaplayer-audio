@@ -7,7 +7,6 @@ from asyncio import AbstractEventLoop, Queue as AsyncQueue
 from numpy import ndarray
 from sounddevice import OutputStream, CallbackFlags
 # > Typing
-from ctypes import _CData as CData
 from typing_extensions import Any, Optional, NoReturn, Callable, deprecated
 # > Local Imports
 from .._types import AudioSamplerate, AudioChannels, AudioDType
@@ -46,7 +45,7 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
         self.precallback = precallback if (precallback is not None) else (lambda frames: None)
         self.flag = flag if (flag is not None) else CallbackSettingsFlag(0)
     
-    def __callback__(self, outdata: ndarray, frames: int, time: CData, status: CallbackFlags):
+    def __callback__(self, outdata: ndarray, frames: int, time, status: CallbackFlags):
         if self.buffer is not None:
             if len(self.buffer) == frames:
                 wdata = self.buffer.copy()
@@ -178,7 +177,7 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         self.precallback = precallback if (precallback is not None) else (lambda frames: None)
         self.flag = flag if (flag is not None) else CallbackSettingsFlag(0)
     
-    def __callback__(self, outdata: ndarray, frames: int, time: CData, status: CallbackFlags):
+    def __callback__(self, outdata: ndarray, frames: int, time, status: CallbackFlags):
         if self.buffer is not None:
             if len(self.buffer) == frames:
                 wdata = self.buffer.copy()
