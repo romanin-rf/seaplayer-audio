@@ -80,11 +80,11 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
             except queue.Empty:
                 return
             size = len(qdata)
-            if size > frames:
+            if size == frames:
+                wdata = qdata[:frames]
+            elif size > frames:
                 wdata = qdata[:frames]
                 self.buffer = qdata[frames:]
-            elif size == frames:
-                wdata = qdata[:frames]
             else:
                 if CallbackSettingsFlag.FILL_ZEROS in self.flag:
                     wdata = np.vstack([ qdata, np.zeros((frames - size, self.channels), dtype=outdata.dtype) ], dtype=outdata.dtype)
@@ -212,11 +212,11 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
             except asyncio.QueueEmpty:
                 return
             size = len(qdata)
+            if size == frames:
+                wdata = qdata.copy()
             if size > frames:
                 wdata = qdata[:frames]
                 self.buffer = qdata[frames:]
-            elif size == frames:
-                wdata = qdata[:frames]
             else:
                 if CallbackSettingsFlag.FILL_ZEROS in self.flag:
                     wdata = np.vstack([ qdata, np.zeros((frames - size, self.channels), dtype=outdata.dtype) ], dtype=outdata.dtype)
