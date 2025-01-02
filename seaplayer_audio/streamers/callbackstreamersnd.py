@@ -44,73 +44,73 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
         )
         self.precallback = precallback if (precallback is not None) else (lambda frames: None)
         self.flag = flag if (flag is not None) else CallbackSettingsFlag(0)
-        self.lcbs = []
+        #self.lcbs = []
     
     def __callback__(self, outdata: ndarray, frames: int, time, status: CallbackFlags):
-        self.lcbs.clear()
+        #self.lcbs.clear()
         if self.buffer is not None:
-            self.lcbs.append('self.buffer is not None')
+            #self.lcbs.append('self.buffer is not None')
             if len(self.buffer) == frames:
                 wdata = self.buffer.copy()
                 self.buffer = None
-                self.lcbs.append('len(self.buffer) == frames')
+                #self.lcbs.append('len(self.buffer) == frames')
             elif len(self.buffer) > frames:
                 wdata = self.buffer[:frames]
                 self.buffer = self.buffer[frames:]
-                self.lcbs.append('len(self.buffer) > frames')
+                #self.lcbs.append('len(self.buffer) > frames')
             else:
-                self.lcbs.append('len(self.buffer) < frames')
+                #self.lcbs.append('len(self.buffer) < frames')
                 self.precallback(frames - len(self.buffer))
                 try:
                     qdata = self.queue.get_nowait()
                 except queue.Empty:
-                    self.lcbs.append('queue.Empty')
+                    #self.lcbs.append('queue.Empty')
                     return
                 size = len(self.buffer) + len(qdata)
                 if size == frames:
                     wdata = np.vstack( [self.buffer, qdata], dtype=outdata.dtype )
                     self.buffer = None
-                    self.lcbs.append('size == frames')
+                    #self.lcbs.append('size == frames')
                 elif size > frames:
                     needed = frames - len(self.buffer)
                     wdata = np.vstack( [self.buffer, qdata[:needed]], dtype=outdata.dtype )
                     self.buffer = qdata[needed:]
-                    self.lcbs.append('size > frames')
+                    #self.lcbs.append('size > frames')
                 else:
                     if CallbackSettingsFlag.FILL_ZEROS in self.flag:
                         wdata = np.vstack([ self.buffer, qdata, np.zeros((frames - size, self.channels), dtype=outdata.dtype) ], dtype=outdata.dtype)
                         self.buffer = None
-                        self.lcbs.append('CallbackSettingsFlag.FILL_ZEROS in self.flag')
+                        #self.lcbs.append('CallbackSettingsFlag.FILL_ZEROS in self.flag')
                     else:
-                        self.lcbs.append('CallbackSettingsFlag.FILL_ZEROS not in self.flag')
+                        #self.lcbs.append('CallbackSettingsFlag.FILL_ZEROS not in self.flag')
                         self.buffer = np.vstack( [self.buffer, qdata], dtype=outdata.dtype )
                         return
         else:
-            self.lcbs.append('self.buffer is None')
+            #self.lcbs.append('self.buffer is None')
             self.precallback(frames)
             try:
                 qdata = self.queue.get_nowait()
             except queue.Empty:
-                self.lcbs.append('queue.Empty')
+                #self.lcbs.append('queue.Empty')
                 return
             if len(qdata) == frames:
                 wdata = qdata[:frames]
-                self.lcbs.append('len(qdata) == frames')
+                #self.lcbs.append('len(qdata) == frames')
             elif len(qdata) > frames:
                 wdata = qdata[:frames]
                 self.buffer = qdata[frames:]
-                self.lcbs.append('len(qdata) > frames')
+                #self.lcbs.append('len(qdata) > frames')
             else:
-                self.lcbs.append('len(qdata) < frames')
+                #self.lcbs.append('len(qdata) < frames')
                 if CallbackSettingsFlag.FILL_ZEROS in self.flag:
                     wdata = np.vstack([ qdata, np.zeros((frames - size, self.channels), dtype=outdata.dtype) ], dtype=outdata.dtype)
-                    self.lcbs.append('CallbackSettingsFlag.FILL_ZEROS in self.flag')
+                    #self.lcbs.append('CallbackSettingsFlag.FILL_ZEROS in self.flag')
                 else:
                     self.buffer = qdata.copy()
-                    self.lcbs.append('CallbackSettingsFlag.FILL_ZEROS not in self.flag')
+                    #self.lcbs.append('CallbackSettingsFlag.FILL_ZEROS not in self.flag')
                     return
-        with open('__callback__.log', 'w', encoding='utf-8') as file:
-            file.write(repr(self.lcbs))
+        #with open('__callback__.log', 'w', encoding='utf-8') as file:
+        #    file.write(repr(self.lcbs))
         outdata[:] = wdata
     
     def is_busy(self) -> bool:
