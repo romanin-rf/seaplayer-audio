@@ -99,10 +99,13 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
         samplerate: Optional[AudioSamplerate]=None,
         channels: Optional[AudioChannels]=None,
         dtype: Optional[AudioDType]=None,
+        device: Optional[int]=None,
+        callback: Optional[Callable[[ndarray, int, Any, CallbackFlags], None]]=None,
         *,
         restore_state: bool=True
     ) -> None:
-        super().reconfigure(samplerate, channels, dtype)
+        super().reconfigure(samplerate, channels, dtype, device)
+        self.callback = callback if (callback is not None) else self.callback
         state = self.state
         if StreamerState.RUNNING in self.state:
             self.stop()
@@ -229,13 +232,16 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         samplerate: Optional[AudioSamplerate]=None,
         channels: Optional[AudioChannels]=None,
         dtype: Optional[AudioDType]=None,
+        device: Optional[int]=None,
+        callback: Optional[Callable[[ndarray, int, Any, CallbackFlags], None]]=None,
         *,
         restore_state: bool=True
     ) -> None:
-        super().reconfigure(samplerate, channels, dtype)
+        super().reconfigure(samplerate, channels, dtype, device)
+        self.callback = callback if (callback is not None) else self.callback
         state = self.state
         if StreamerState.RUNNING in self.state:
-            asyncio.run_coroutine_threadsafe(self.stop(), self.loop).result()
+            asyncio.run_coroutine_threadsafe(self.stop(), self.loop()).result()
         self.stream = OutputStream(
             samplerate=self.samplerate,
             channels=self.channels,
@@ -245,7 +251,7 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         )
         self.buffer = None
         if restore_state and (StreamerState.RUNNING in state):
-            asyncio.run_coroutine_threadsafe(self.start(), self.loop).result()
+            asyncio.run_coroutine_threadsafe(self.start(), self.loop()).result()
     
     @deprecated("NOT IMPLEMENTED")
     async def run(self) -> NoReturn:

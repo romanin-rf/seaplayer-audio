@@ -18,6 +18,15 @@ class SoundDeviceStreamerBase(StreamerBase):
     ) -> None:
         super().__init__(samplerate, channels, dtype, closefd)
         self.device = device
+    
+    def reconfigure(self,
+        samplerate: Optional[AudioSamplerate]=None,
+        channels: Optional[AudioChannels]=None,
+        dtype: Optional[AudioDType]=None,
+        device: Optional[int]=None,
+    ) -> None:
+        super().reconfigure(samplerate, channels, dtype)
+        self.device = device if (device is not None) else self.device
 
 # ^ Async SoundDevice Streamer Base
 
@@ -35,3 +44,12 @@ class AsyncSoundDeviceStreamerBase(AsyncStreamerBase):
     ) -> None:
         super().__init__(samplerate, channels, dtype, closefd, loop)
         self.device = device
+    
+    def reconfigure(self,
+        samplerate: Optional[AudioSamplerate]=None,
+        channels: Optional[AudioChannels]=None,
+        dtype: Optional[AudioDType]=None,
+        device: Optional[int]=None,
+    ) -> None:
+        super().reconfigure(samplerate, channels, dtype)
+        self.device = device if (device is not None) else self.device
