@@ -66,14 +66,15 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
                 except queue.Empty:
                     self.lcbs.append('queue.Empty')
                     return
-                size = len(qdata) + len(self.buffer)
+                size = len(self.buffer) + len(qdata)
                 if size == frames:
                     wdata = np.vstack( [self.buffer, qdata], dtype=outdata.dtype )
                     self.buffer = None
                     self.lcbs.append('size == frames')
                 elif size > frames:
-                    wdata = np.vstack( [self.buffer, qdata[:frames]], dtype=outdata.dtype )
-                    self.buffer = qdata[frames:]
+                    needed = frames - len(self.buffer)
+                    wdata = np.vstack( [self.buffer, qdata[:needed]], dtype=outdata.dtype )
+                    self.buffer = qdata[needed:]
                     self.lcbs.append('size > frames')
                 else:
                     if CallbackSettingsFlag.FILL_ZEROS in self.flag:
