@@ -108,7 +108,7 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
                     self.buffer = qdata.copy()
                     self.lcbs.append('CallbackSettingsFlag.FILL_ZEROS not in self.flag')
                     return
-        with open('__callback__.log', 'r', encoding='utf-8') as file:
+        with open('__callback__.log', 'w', encoding='utf-8') as file:
             file.write(repr(self.lcbs))
         outdata[:] = wdata
     
