@@ -57,6 +57,7 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
                 try:
                     qdata = self.queue.get_nowait()
                 except queue.Empty:
+                    outdata[:] = np.zeros((frames, self.channels), dtype=outdata.dtype)
                     return
                 size = len(self.buffer) + len(qdata)
                 if size == frames:
@@ -72,11 +73,13 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
                         self.buffer = None
                     else:
                         self.buffer = np.vstack( [self.buffer, qdata], dtype=outdata.dtype )
+                        outdata[:] = np.zeros((frames, self.channels), dtype=outdata.dtype)
                         return
         else:
             try:
                 qdata = self.queue.get_nowait()
             except queue.Empty:
+                outdata[:] = np.zeros((frames, self.channels), dtype=outdata.dtype)
                 return
             if len(qdata) == frames:
                 wdata = qdata[:frames]
@@ -88,6 +91,7 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
                     wdata = np.vstack([ qdata, np.zeros((frames - size, self.channels), dtype=outdata.dtype) ], dtype=outdata.dtype)
                 else:
                     self.buffer = qdata.copy()
+                    outdata[:] = np.zeros((frames, self.channels), dtype=outdata.dtype)
                     return
         outdata[:] = wdata
     
@@ -190,6 +194,7 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
                 try:
                     qdata = self.queue.get_nowait()
                 except queue.Empty:
+                    outdata[:] = np.zeros((frames, self.channels), dtype=outdata.dtype)
                     return
                 size = len(self.buffer) + len(qdata)
                 if size == frames:
@@ -205,11 +210,13 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
                         self.buffer = None
                     else:
                         self.buffer = np.vstack( [self.buffer, qdata], dtype=outdata.dtype )
+                        outdata[:] = np.zeros((frames, self.channels), dtype=outdata.dtype)
                         return
         else:
             try:
                 qdata = self.queue.get_nowait()
             except queue.Empty:
+                outdata[:] = np.zeros((frames, self.channels), dtype=outdata.dtype)
                 return
             if len(qdata) == frames:
                 wdata = qdata[:frames]
@@ -221,6 +228,7 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
                     wdata = np.vstack([ qdata, np.zeros((frames - size, self.channels), dtype=outdata.dtype) ], dtype=outdata.dtype)
                 else:
                     self.buffer = qdata.copy()
+                    outdata[:] = np.zeros((frames, self.channels), dtype=outdata.dtype)
                     return
         outdata[:] = wdata
     
