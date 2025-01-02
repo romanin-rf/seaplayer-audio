@@ -79,10 +79,9 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
                 qdata = self.queue.get_nowait()
             except queue.Empty:
                 return
-            size = len(qdata)
-            if size == frames:
+            if len(qdata) == frames:
                 wdata = qdata[:frames]
-            elif size > frames:
+            elif len(qdata) > frames:
                 wdata = qdata[:frames]
                 self.buffer = qdata[frames:]
             else:
@@ -211,10 +210,9 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
                 qdata = self.queue.get_nowait()
             except asyncio.QueueEmpty:
                 return
-            size = len(qdata)
-            if size == frames:
+            if len(qdata) == frames:
                 wdata = qdata.copy()
-            if size > frames:
+            if len(qdata) > frames:
                 wdata = qdata[:frames]
                 self.buffer = qdata[frames:]
             else:
