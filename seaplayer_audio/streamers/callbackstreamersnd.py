@@ -29,21 +29,21 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
         dtype: Optional[AudioDType]=None,
         closefd: bool=True,
         device: Optional[int]=None,
-        precallback: Optional[Callable[[int], Any]]=None,
+        callback: Optional[Callable[[ndarray, int, Any, CallbackFlags], None]]=None,
         flag: Optional[CallbackSettingsFlag]=None
     ) -> None:
         super().__init__(samplerate, channels, dtype, closefd, device)
         self.queue: Queue[ndarray] = Queue(1)
         self.buffer: Optional[ndarray] = None
+        self.callback = callback if (callback is not None) else self.__callback__
+        self.flag = flag if (flag is not None) else CallbackSettingsFlag(0)
         self.stream = OutputStream(
             samplerate=self.samplerate,
             channels=self.channels,
             dtype=self.dtype,
             device=self.device,
-            callback=self.__callback__
+            callback=self.callback
         )
-        self.precallback = precallback if (precallback is not None) else (lambda frames: None)
-        self.flag = flag if (flag is not None) else CallbackSettingsFlag(0)
     
     def __callback__(self, outdata: ndarray, frames: int, time, status: CallbackFlags):
         if self.buffer is not None:
@@ -54,7 +54,6 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
                 wdata = self.buffer[:frames]
                 self.buffer = self.buffer[frames:]
             else:
-                self.precallback(frames - len(self.buffer))
                 try:
                     qdata = self.queue.get_nowait()
                 except queue.Empty:
@@ -75,7 +74,6 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
                         self.buffer = np.vstack( [self.buffer, qdata], dtype=outdata.dtype )
                         return
         else:
-            self.precallback(frames)
             try:
                 qdata = self.queue.get_nowait()
             except queue.Empty:
@@ -113,7 +111,7 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
             channels=self.channels,
             dtype=self.dtype,
             device=self.device,
-            callback=self.__callback__
+            callback=self.callback
         )
         self.buffer = None
         if restore_state and (StreamerState.RUNNING in state):
@@ -161,21 +159,21 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         closefd: bool=True,
         loop: Optional[AbstractEventLoop]=None,
         device: Optional[int]=None,
-        precallback: Optional[Callable[[int], Any]]=None,
+        callback: Optional[Callable[[ndarray, int, Any, CallbackFlags], None]]=None,
         flag: Optional[CallbackSettingsFlag]=None
     ):
         super().__init__(samplerate, channels, dtype, closefd, loop, device)
         self.queue: AsyncQueue[ndarray] = AsyncQueue(1)
         self.buffer: Optional[ndarray] = None
+        self.callback = callback if (callback is not None) else self.__callback__
+        self.flag = flag if (flag is not None) else CallbackSettingsFlag(0)
         self.stream = OutputStream(
             samplerate=self.samplerate,
             channels=self.channels,
             dtype=self.dtype,
             device=self.device,
-            callback=self.__callback__
+            callback=self.callback
         )
-        self.precallback = precallback if (precallback is not None) else (lambda frames: None)
-        self.flag = flag if (flag is not None) else CallbackSettingsFlag(0)
     
     def __callback__(self, outdata: ndarray, frames: int, time, status: CallbackFlags):
         if self.buffer is not None:
@@ -186,7 +184,6 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
                 wdata = self.buffer[:frames]
                 self.buffer = self.buffer[frames:]
             else:
-                self.precallback(frames - len(self.buffer))
                 try:
                     qdata = self.queue.get_nowait()
                 except queue.Empty:
@@ -207,7 +204,6 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
                         self.buffer = np.vstack( [self.buffer, qdata], dtype=outdata.dtype )
                         return
         else:
-            self.precallback(frames)
             try:
                 qdata = self.queue.get_nowait()
             except queue.Empty:
@@ -245,7 +241,7 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
             channels=self.channels,
             dtype=self.dtype,
             device=self.device,
-            callback=self.__callback__
+            callback=self.callback
         )
         self.buffer = None
         if restore_state and (StreamerState.RUNNING in state):
