@@ -42,10 +42,11 @@ class ThreadSoundDeviceStreamer(SoundDeviceStreamerBase):
         samplerate: Optional[AudioSamplerate]=None,
         channels: Optional[AudioChannels]=None,
         dtype: Optional[AudioDType]=None,
+        device: Optional[int]=None,
         *,
         restore_state: bool=True
     ) -> None:
-        super().reconfigure(samplerate, channels, dtype)
+        super().reconfigure(samplerate, channels, dtype, device)
         state = self.state
         if StreamerState.RUNNING in self.state:
             self.stop()
@@ -135,10 +136,11 @@ class AsyncThreadSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         samplerate: Optional[AudioSamplerate]=None,
         channels: Optional[AudioChannels]=None,
         dtype: Optional[AudioDType]=None,
+        device: Optional[int]=None,
         *,
         restore_state: bool=True
     ) -> None:
-        super().reconfigure(samplerate, channels, dtype)
+        super().reconfigure(samplerate, channels, dtype, device)
         state = self.state
         if StreamerState.RUNNING in self.state:
             asyncio.run_coroutine_threadsafe(self.stop(), self.loop).result()

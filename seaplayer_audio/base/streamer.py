@@ -62,9 +62,9 @@ class StreamerBase(Reprable):
         channels: Optional[AudioChannels]=None,
         dtype: Optional[AudioDType]=None,
     ) -> None:
-        self.samplerate = samplerate or 44100
-        self.channels = channels or 2
-        self.dtype = dtype or 'float32'
+        self.samplerate = samplerate if (samplerate is not None) else self.samplerate
+        self.channels = channels if (channels is not None) else self.channels
+        self.dtype = dtype if (dtype is not None) else self.dtype
     
     def run(self) -> None:
         raise NotImplementedError

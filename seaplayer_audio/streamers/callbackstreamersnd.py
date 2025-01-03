@@ -1,12 +1,21 @@
 import queue
 import asyncio
+import numpy as np
+from enum import Flag, auto
 from queue import Queue
 from asyncio import AbstractEventLoop, Queue as AsyncQueue
-from numpy import ndarray, vstack as npvstack, zeros as npzeros
-from sounddevice import OutputStream
+from numpy import ndarray
+from sounddevice import OutputStream, CallbackFlags
+# > Typing
 from typing_extensions import Any, Optional, NoReturn, Callable, deprecated
+# > Local Imports
 from .._types import AudioSamplerate, AudioChannels, AudioDType
 from ..base import AsyncSoundDeviceStreamerBase, SoundDeviceStreamerBase, StreamerState
+
+# ! Types
+
+class CallbackSettingsFlag(Flag):
+    FILL_ZEROS = auto()
 
 # ! Main Class
 
@@ -20,55 +29,70 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
         dtype: Optional[AudioDType]=None,
         closefd: bool=True,
         device: Optional[int]=None,
-        precallback: Optional[Callable[[int], Any]]=None
+        callback: Optional[Callable[[ndarray, int, Any, CallbackFlags], None]]=None,
+        flag: Optional[CallbackSettingsFlag]=None
     ) -> None:
         super().__init__(samplerate, channels, dtype, closefd, device)
         self.queue: Queue[ndarray] = Queue(1)
+        self.buffer: Optional[ndarray] = None
+        self.callback = callback if (callback is not None) else self.__callback__
+        self.flag = flag if (flag is not None) else CallbackSettingsFlag(0)
         self.stream = OutputStream(
             samplerate=self.samplerate,
             channels=self.channels,
             dtype=self.dtype,
             device=self.device,
-            callback=self.__callback__
+            callback=self.callback
         )
-        self.precallback = precallback if (precallback is not None) else (lambda frames: True)
-        self.buffer: Optional[ndarray] = None
     
-    def __callback__(self, outdata: ndarray, frames: int, time, status):
-        self.precallback(frames)
-        if self.buffer is None:
-            try:
-                d = self.queue.get_nowait()
-            except queue.Empty:
-                return
-            if len(d) >= frames:
-                wdata = d[:frames]
-                self.buffer = d[frames:]
+    def __callback__(self, outdata: ndarray, frames: int, time, status: CallbackFlags):
+        if self.buffer is not None:
+            if len(self.buffer) == frames:
+                wdata = self.buffer.copy()
+                self.buffer = None
+            elif len(self.buffer) > frames:
+                wdata = self.buffer[:frames]
+                self.buffer = self.buffer[frames:]
             else:
-                wdata = npvstack([d, npzeros((frames - len(d), self.channels), dtype=outdata.dtype)])
-        elif len(self.buffer) >= frames:
-            wdata = self.buffer[:frames]
-            self.buffer = self.buffer[frames:]
-        elif (len(self.buffer) < frames) and (self.queue.qsize() >= 1):
-            try:
-                d = self.queue.get_nowait()
-            except queue.Empty:
-                return
-            wdata = self.buffer.copy()
-            self.buffer = None
-            needed = frames - len(wdata)
-            wdata = npvstack([wdata, d[:needed]])
-            self.buffer = d[needed:]
-            if len(wdata) < frames:
-                wdata = npvstack([wdata, npzeros((frames - len(wdata), self.channels), dtype=outdata.dtype)])
-        elif (len(self.buffer) < frames) and self.queue.empty():
-            wdata = self.buffer.copy()
-            self.buffer = None
-            needed = frames - len(wdata)
-            wdata = npvstack([wdata, npzeros((needed, self.channels), dtype=outdata.dtype)])
+                try:
+                    qdata = self.queue.get_nowait()
+                except queue.Empty:
+                    outdata[:] = np.zeros((frames, self.channels), dtype=outdata.dtype)
+                    return
+                size = len(self.buffer) + len(qdata)
+                if size == frames:
+                    wdata = np.vstack( [self.buffer, qdata], dtype=outdata.dtype )
+                    self.buffer = None
+                elif size > frames:
+                    needed = frames - len(self.buffer)
+                    wdata = np.vstack( [self.buffer, qdata[:needed]], dtype=outdata.dtype )
+                    self.buffer = qdata[needed:]
+                else:
+                    if CallbackSettingsFlag.FILL_ZEROS in self.flag:
+                        wdata = np.vstack([ self.buffer, qdata, np.zeros((frames - size, self.channels), dtype=outdata.dtype) ], dtype=outdata.dtype)
+                        self.buffer = None
+                    else:
+                        self.buffer = np.vstack( [self.buffer, qdata], dtype=outdata.dtype )
+                        outdata[:] = np.zeros((frames, self.channels), dtype=outdata.dtype)
+                        return
         else:
-            self.buffer = None
-            wdata = npzeros((frames, self.channels), dtype=outdata.dtype)
+            try:
+                qdata = self.queue.get_nowait()
+            except queue.Empty:
+                outdata[:] = np.zeros((frames, self.channels), dtype=outdata.dtype)
+                return
+            if len(qdata) == frames:
+                wdata = qdata[:frames]
+            elif len(qdata) > frames:
+                wdata = qdata[:frames]
+                self.buffer = qdata[frames:]
+            else:
+                if CallbackSettingsFlag.FILL_ZEROS in self.flag:
+                    wdata = np.vstack([ qdata, np.zeros((frames - size, self.channels), dtype=outdata.dtype) ], dtype=outdata.dtype)
+                else:
+                    self.buffer = qdata.copy()
+                    outdata[:] = np.zeros((frames, self.channels), dtype=outdata.dtype)
+                    return
         outdata[:] = wdata
     
     def is_busy(self) -> bool:
@@ -79,10 +103,13 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
         samplerate: Optional[AudioSamplerate]=None,
         channels: Optional[AudioChannels]=None,
         dtype: Optional[AudioDType]=None,
+        device: Optional[int]=None,
+        callback: Optional[Callable[[ndarray, int, Any, CallbackFlags], None]]=None,
         *,
         restore_state: bool=True
     ) -> None:
-        super().reconfigure(samplerate, channels, dtype)
+        super().reconfigure(samplerate, channels, dtype, device)
+        self.callback = callback if (callback is not None) else self.callback
         state = self.state
         if StreamerState.RUNNING in self.state:
             self.stop()
@@ -91,12 +118,13 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
             channels=self.channels,
             dtype=self.dtype,
             device=self.device,
-            callback=self.__callback__
+            callback=self.callback
         )
+        self.buffer = None
         if restore_state and (StreamerState.RUNNING in state):
             self.start()
     
-    @deprecated("!!! NOT IMPLEMENTED !!!")
+    @deprecated("NOT IMPLEMENTED")
     def run(self) -> NoReturn:
         raise NotImplementedError
     
@@ -138,55 +166,70 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         closefd: bool=True,
         loop: Optional[AbstractEventLoop]=None,
         device: Optional[int]=None,
-        precallback: Optional[Callable[[int], bool]]=None
+        callback: Optional[Callable[[ndarray, int, Any, CallbackFlags], None]]=None,
+        flag: Optional[CallbackSettingsFlag]=None
     ):
         super().__init__(samplerate, channels, dtype, closefd, loop, device)
         self.queue: AsyncQueue[ndarray] = AsyncQueue(1)
+        self.buffer: Optional[ndarray] = None
+        self.callback = callback if (callback is not None) else self.__callback__
+        self.flag = flag if (flag is not None) else CallbackSettingsFlag(0)
         self.stream = OutputStream(
             samplerate=self.samplerate,
             channels=self.channels,
             dtype=self.dtype,
             device=self.device,
-            callback=self.__callback__
+            callback=self.callback
         )
-        self.precallback = precallback if (precallback is not None) else (lambda frames: True)
-        self.buffer: Optional[ndarray] = None
     
-    def __callback__(self, outdata: ndarray, frames: int, time, status):
-        self.precallback(frames)
-        if self.buffer is None:
-            try:
-                d = self.queue.get_nowait()
-            except queue.Empty:
-                return
-            if len(d) >= frames:
-                wdata = d[:frames]
-                self.buffer = d[frames:]
+    def __callback__(self, outdata: ndarray, frames: int, time, status: CallbackFlags):
+        if self.buffer is not None:
+            if len(self.buffer) == frames:
+                wdata = self.buffer.copy()
+                self.buffer = None
+            elif len(self.buffer) > frames:
+                wdata = self.buffer[:frames]
+                self.buffer = self.buffer[frames:]
             else:
-                wdata = npvstack([d, npzeros((frames - len(d), self.channels), dtype=outdata.dtype)])
-        elif len(self.buffer) >= frames:
-            wdata = self.buffer[:frames]
-            self.buffer = self.buffer[frames:]
-        elif (len(self.buffer) < frames) and (self.queue.qsize() >= 1):
-            try:
-                d = self.queue.get_nowait()
-            except queue.Empty:
-                return
-            wdata = self.buffer.copy()
-            self.buffer = None
-            needed = frames - len(wdata)
-            wdata = npvstack([wdata, d[:needed]])
-            self.buffer = d[needed:]
-            if len(wdata) < frames:
-                wdata = npvstack([wdata, npzeros((frames - len(wdata), self.channels), dtype=outdata.dtype)])
-        elif (len(self.buffer) < frames) and self.queue.empty():
-            wdata = self.buffer.copy()
-            self.buffer = None
-            needed = frames - len(wdata)
-            wdata = npvstack([wdata, npzeros((needed, self.channels), dtype=outdata.dtype)])
+                try:
+                    qdata = self.queue.get_nowait()
+                except queue.Empty:
+                    outdata[:] = np.zeros((frames, self.channels), dtype=outdata.dtype)
+                    return
+                size = len(self.buffer) + len(qdata)
+                if size == frames:
+                    wdata = np.vstack( [self.buffer, qdata], dtype=outdata.dtype )
+                    self.buffer = None
+                elif size > frames:
+                    needed = frames - len(self.buffer)
+                    wdata = np.vstack( [self.buffer, qdata[:needed]], dtype=outdata.dtype )
+                    self.buffer = qdata[needed:]
+                else:
+                    if CallbackSettingsFlag.FILL_ZEROS in self.flag:
+                        wdata = np.vstack([ self.buffer, qdata, np.zeros((frames - size, self.channels), dtype=outdata.dtype) ], dtype=outdata.dtype)
+                        self.buffer = None
+                    else:
+                        self.buffer = np.vstack( [self.buffer, qdata], dtype=outdata.dtype )
+                        outdata[:] = np.zeros((frames, self.channels), dtype=outdata.dtype)
+                        return
         else:
-            self.buffer = None
-            wdata = npzeros((frames, self.channels), dtype=outdata.dtype)
+            try:
+                qdata = self.queue.get_nowait()
+            except queue.Empty:
+                outdata[:] = np.zeros((frames, self.channels), dtype=outdata.dtype)
+                return
+            if len(qdata) == frames:
+                wdata = qdata[:frames]
+            elif len(qdata) > frames:
+                wdata = qdata[:frames]
+                self.buffer = qdata[frames:]
+            else:
+                if CallbackSettingsFlag.FILL_ZEROS in self.flag:
+                    wdata = np.vstack([ qdata, np.zeros((frames - size, self.channels), dtype=outdata.dtype) ], dtype=outdata.dtype)
+                else:
+                    self.buffer = qdata.copy()
+                    outdata[:] = np.zeros((frames, self.channels), dtype=outdata.dtype)
+                    return
         outdata[:] = wdata
     
     def is_busy(self) -> bool:
@@ -197,24 +240,28 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         samplerate: Optional[AudioSamplerate]=None,
         channels: Optional[AudioChannels]=None,
         dtype: Optional[AudioDType]=None,
+        device: Optional[int]=None,
+        callback: Optional[Callable[[ndarray, int, Any, CallbackFlags], None]]=None,
         *,
         restore_state: bool=True
     ) -> None:
-        super().reconfigure(samplerate, channels, dtype)
+        super().reconfigure(samplerate, channels, dtype, device)
+        self.callback = callback if (callback is not None) else self.callback
         state = self.state
         if StreamerState.RUNNING in self.state:
-            asyncio.run_coroutine_threadsafe(self.stop(), self.loop).result()
+            asyncio.run_coroutine_threadsafe(self.stop(), self.loop()).result()
         self.stream = OutputStream(
             samplerate=self.samplerate,
             channels=self.channels,
             dtype=self.dtype,
             device=self.device,
-            callback=self.__callback__
+            callback=self.callback
         )
+        self.buffer = None
         if restore_state and (StreamerState.RUNNING in state):
-            asyncio.run_coroutine_threadsafe(self.start(), self.loop).result()
+            asyncio.run_coroutine_threadsafe(self.start(), self.loop()).result()
     
-    @deprecated("!!! NOT IMPLEMENTED !!!")
+    @deprecated("NOT IMPLEMENTED")
     async def run(self) -> NoReturn:
         raise NotImplementedError
     

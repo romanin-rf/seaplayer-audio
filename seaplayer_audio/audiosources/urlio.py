@@ -213,18 +213,18 @@ class URLIO(BufferedReader):
     
     # ^ IO Methods (NOT IMPLEMENTED)
     
-    @deprecated('!!! NOT IMPLEMENTED !!!')
+    @deprecated('NOT IMPLEMENTED')
     def write(self):
         raise OSError
     
-    @deprecated('!!! NOT IMPLEMENTED !!!')
+    @deprecated('NOT IMPLEMENTED')
     def writelines(self, lines: Iterable[bytes], /):
         raise OSError
     
-    @deprecated('!!! NOT IMPLEMENTED !!!')
+    @deprecated('NOT IMPLEMENTED')
     def fileno(self):
         raise OSError
     
-    @deprecated('!!! NOT IMPLEMENTED !!!')
+    @deprecated('NOT IMPLEMENTED')
     def flush(self):
         raise NotImplementedError
