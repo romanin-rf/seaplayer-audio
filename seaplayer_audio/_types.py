@@ -9,7 +9,6 @@ from typing_extensions import (
     Tuple, Any,
     Coroutine, Awaitable, Callable,
     Literal, Optional, Union,
-    Protocol,
     TypeVar, TypeAlias
 )
 
@@ -97,10 +96,10 @@ class URLOpenRetType:
     def geturl(self) -> str: ...
     def info(self) -> Message: ...
 
-class URLOpenRetFile(BufferedReader, URLOpenRetType, Protocol):
+class URLOpenRetFile(BufferedReader, URLOpenRetType):
     pass
 
-class URLOpenRetHTTP(HTTPResponse, URLOpenRetFile, Protocol):
+class URLOpenRetHTTP(HTTPResponse, URLOpenRetFile):
     pass
 
 URLOpenRet: TypeAlias = URLOpenRetFile | URLOpenRetHTTP
