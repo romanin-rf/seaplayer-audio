@@ -9,7 +9,7 @@ from sounddevice import OutputStream, CallbackFlags
 # > Typing
 from typing_extensions import Any, Optional, NoReturn, Callable, deprecated
 # > Local Imports
-from .._types import AudioSamplerate, AudioChannels, AudioDType
+from .._types import AudioSamplerate, AudioChannels, AudioDType, SoundDeviceStreamerLatency
 from ..base import AsyncSoundDeviceStreamerBase, SoundDeviceStreamerBase, StreamerState
 
 # ! Types
@@ -27,12 +27,14 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
         samplerate: Optional[AudioSamplerate]=None,
         channels: Optional[AudioChannels]=None,
         dtype: Optional[AudioDType]=None,
+        latency: Optional[SoundDeviceStreamerLatency]=None,
         closefd: bool=True,
         device: Optional[int]=None,
         callback: Optional[Callable[[ndarray, int, Any, CallbackFlags], None]]=None,
         flag: Optional[CallbackSettingsFlag]=None
     ) -> None:
         super().__init__(samplerate, channels, dtype, closefd, device)
+        self.latency = latency if (latency is not None) else 0.1
         self.queue: Queue[ndarray] = Queue(1)
         self.buffer: Optional[ndarray] = None
         self.callback = callback if (callback is not None) else self.__callback__
@@ -42,6 +44,7 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
             channels=self.channels,
             dtype=self.dtype,
             device=self.device,
+            latency=self.latency,
             callback=self.callback
         )
     
@@ -103,12 +106,14 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
         samplerate: Optional[AudioSamplerate]=None,
         channels: Optional[AudioChannels]=None,
         dtype: Optional[AudioDType]=None,
+        latency: Optional[SoundDeviceStreamerLatency]=None,
         device: Optional[int]=None,
         callback: Optional[Callable[[ndarray, int, Any, CallbackFlags], None]]=None,
         *,
         restore_state: bool=True
     ) -> None:
         super().reconfigure(samplerate, channels, dtype, device)
+        self.latency = latency if (latency is not None) else self.latency
         self.callback = callback if (callback is not None) else self.callback
         state = self.state
         if StreamerState.RUNNING in self.state:
@@ -118,6 +123,7 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
             channels=self.channels,
             dtype=self.dtype,
             device=self.device,
+            latency=self.latency,
             callback=self.callback
         )
         self.buffer = None
@@ -163,6 +169,7 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         samplerate: Optional[AudioSamplerate]=None,
         channels: Optional[AudioChannels]=None,
         dtype: Optional[AudioDType]=None,
+        latency: Optional[SoundDeviceStreamerLatency]=None,
         closefd: bool=True,
         loop: Optional[AbstractEventLoop]=None,
         device: Optional[int]=None,
@@ -170,6 +177,7 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         flag: Optional[CallbackSettingsFlag]=None
     ):
         super().__init__(samplerate, channels, dtype, closefd, loop, device)
+        self.latency = latency if (latency is not None) else 0.1
         self.queue: AsyncQueue[ndarray] = AsyncQueue(1)
         self.buffer: Optional[ndarray] = None
         self.callback = callback if (callback is not None) else self.__callback__
@@ -240,12 +248,14 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         samplerate: Optional[AudioSamplerate]=None,
         channels: Optional[AudioChannels]=None,
         dtype: Optional[AudioDType]=None,
+        latency: Optional[SoundDeviceStreamerLatency]=None,
         device: Optional[int]=None,
         callback: Optional[Callable[[ndarray, int, Any, CallbackFlags], None]]=None,
         *,
         restore_state: bool=True
     ) -> None:
         super().reconfigure(samplerate, channels, dtype, device)
+        self.latency = latency if (latency is not None) else self.latency
         self.callback = callback if (callback is not None) else self.callback
         state = self.state
         if StreamerState.RUNNING in self.state:

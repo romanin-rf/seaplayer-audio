@@ -9,6 +9,7 @@ from typing_extensions import (
     Tuple, Any,
     Coroutine, Awaitable, Callable,
     Literal, Optional, Union,
+    Protocol,
     TypeVar, TypeAlias
 )
 
@@ -62,10 +63,12 @@ AudioEndians: TypeAlias         = Literal[
     'FILE', 'LITTLE', 'BIG', 'CPU'
 ]
 
+SoundDeviceStreamerLatency: TypeAlias = Literal['high', 'low'] | float
+
 # ! Class Types
 
 class Reprable:
-    __repr_attrs__: Tuple[Union[str, Tuple[str, bool]], ...] = ()
+    __repr_attrs__: Tuple[str | Tuple[str, bool], ...] = ()
     
     def __str__(self) -> str:
         attrs = []
@@ -90,14 +93,14 @@ class URLOpenRetType:
     file: BufferedReader
     fp: BufferedReader
     
-    def getcode(self) -> Optional[Any]: ...
+    def getcode(self) -> Any | None: ...
     def geturl(self) -> str: ...
     def info(self) -> Message: ...
 
-class URLOpenRetFile(BufferedReader, URLOpenRetType):
+class URLOpenRetFile(BufferedReader, URLOpenRetType, Protocol):
     pass
 
-class URLOpenRetHTTP(HTTPResponse, URLOpenRetFile):
+class URLOpenRetHTTP(HTTPResponse, URLOpenRetFile, Protocol):
     pass
 
-URLOpenRet: TypeAlias = Union[URLOpenRetFile, URLOpenRetHTTP]
+URLOpenRet: TypeAlias = URLOpenRetFile | URLOpenRetHTTP
