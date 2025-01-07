@@ -34,7 +34,7 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
         flag: Optional[CallbackSettingsFlag]=None
     ) -> None:
         super().__init__(samplerate, channels, dtype, closefd, device)
-        self.latency = latency if (latency is not None) else 0.1
+        self.latency = latency
         self.queue: Queue[ndarray] = Queue(1)
         self.buffer: Optional[ndarray] = None
         self.callback = callback if (callback is not None) else self.__callback__
@@ -122,8 +122,8 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
             samplerate=self.samplerate,
             channels=self.channels,
             dtype=self.dtype,
-            device=self.device,
             latency=self.latency,
+            device=self.device,
             callback=self.callback
         )
         self.buffer = None
@@ -177,7 +177,7 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
         flag: Optional[CallbackSettingsFlag]=None
     ):
         super().__init__(samplerate, channels, dtype, closefd, loop, device)
-        self.latency = latency if (latency is not None) else 0.1
+        self.latency = latency
         self.queue: AsyncQueue[ndarray] = AsyncQueue(1)
         self.buffer: Optional[ndarray] = None
         self.callback = callback if (callback is not None) else self.__callback__
@@ -264,6 +264,7 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
             samplerate=self.samplerate,
             channels=self.channels,
             dtype=self.dtype,
+            latency=latency,
             device=self.device,
             callback=self.callback
         )
