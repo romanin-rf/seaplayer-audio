@@ -8,7 +8,8 @@ from .audiosources import (
 )
 from .streamers import (
     ThreadSoundDeviceStreamer, AsyncThreadSoundDeviceStreamer,
-    CallbackSoundDeviceStreamer, AsyncCallbackSoundDeviceStreamer, CallbackSettingsFlag
+    CallbackSoundDeviceStreamer, AsyncCallbackSoundDeviceStreamer, CallbackSettingsFlag,
+    MPSoundDeviceStreamer
 )
 from ._types import AudioSamplerate, AudioChannels, AudioDType, AudioFormat, AudioSubType, AudioEndians
 
@@ -19,6 +20,7 @@ __all__ = [
     'AsyncSoundDeviceStreamerBase', 'SoundDeviceStreamerBase',
     'ThreadSoundDeviceStreamer', 'AsyncThreadSoundDeviceStreamer',
     'CallbackSoundDeviceStreamer', 'AsyncCallbackSoundDeviceStreamer', 'CallbackSettingsFlag',
+    'MPSoundDeviceStreamer',
     'FileAudioSource', 'AsyncFileAudioSource',
     'AudioSamplerate', 'AudioChannels', 'AudioDType', 'AudioFormat', 'AudioSubType', 'AudioEndians'
 ]

@@ -9,8 +9,8 @@ from sounddevice import OutputStream, CallbackFlags
 # > Typing
 from typing_extensions import Any, Optional, NoReturn, Callable, deprecated
 # > Local Imports
-from .._types import AudioSamplerate, AudioChannels, AudioDType, SoundDeviceStreamerLatency
-from ..base import AsyncSoundDeviceStreamerBase, SoundDeviceStreamerBase, StreamerState
+from seaplayer_audio._types import AudioSamplerate, AudioChannels, AudioDType, SoundDeviceStreamerLatency
+from seaplayer_audio.base import AsyncSoundDeviceStreamerBase, SoundDeviceStreamerBase, StreamerState
 
 # ! Types
 

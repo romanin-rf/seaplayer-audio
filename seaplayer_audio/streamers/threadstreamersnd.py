@@ -7,8 +7,8 @@ from queue import Queue
 from threading import Thread
 from asyncio import AbstractEventLoop, Queue as AsyncQueue
 from typing_extensions import Optional
-from .._types import AudioSamplerate, AudioChannels, AudioDType
-from ..base import SoundDeviceStreamerBase, AsyncSoundDeviceStreamerBase, StreamerState
+from seaplayer_audio._types import AudioSamplerate, AudioChannels, AudioDType
+from seaplayer_audio.base import SoundDeviceStreamerBase, AsyncSoundDeviceStreamerBase, StreamerState
 
 # ^ Thread Streamer
 

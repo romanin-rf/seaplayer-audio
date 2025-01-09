@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "seaplayer-audio"
-version = "0.5.13.post2"
+version = "0.6.0"
 description = "A library for async/sync playback audio."
 repository = "https://github.com/romanin-rf/seaplayer-audio"
 authors = ["Romanin <60302782+romanin-rf@users.noreply.github.com>"]
