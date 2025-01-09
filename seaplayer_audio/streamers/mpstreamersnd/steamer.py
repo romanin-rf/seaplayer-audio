@@ -48,15 +48,18 @@ class MPSoundDeviceStreamer(SoundDeviceStreamerBase):
             raise packet.data
         self.state |= StreamerState.STARTED
         while StreamerState.RUNNING in self.state:
-            packet: PacketTypes = self.queue.get()
-            if packet.type == PacketType.INIT:
-                self.parent_pipe.send(packet)
-                packet: PacketTypes = self.parent_pipe.recv()
-                if packet.type == PacketType.ERROR:
-                    raise packet.data
-            elif packet.type == PacketType.AUDIO:
-                self.parent_pipe.send(packet)
-                self.parent_pipe.recv()
+            try:
+                packet: PacketTypes = self.queue.get(timeout=3.0)
+                if packet.type == PacketType.INIT:
+                    self.parent_pipe.send(packet)
+                    packet: PacketTypes = self.parent_pipe.recv()
+                    if packet.type == PacketType.ERROR:
+                        raise packet.data
+                elif packet.type == PacketType.AUDIO:
+                    self.parent_pipe.send(packet)
+                    self.parent_pipe.recv()
+            except queue.Empty:
+                pass
         self.parent_pipe.send(Packet(PacketType.STOP, None))
         self.parent_pipe.recv()
         self.state &= ~StreamerState.STARTED
