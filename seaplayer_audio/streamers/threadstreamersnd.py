@@ -6,7 +6,7 @@ import sounddevice as sd
 from queue import Queue
 from threading import Thread
 from asyncio import AbstractEventLoop, Queue as AsyncQueue
-from typing_extensions import Optional
+# > Local Imports
 from seaplayer_audio._types import AudioSamplerate, AudioChannels, AudioDType
 from seaplayer_audio.base import SoundDeviceStreamerBase, AsyncSoundDeviceStreamerBase, StreamerState
 
@@ -17,11 +17,11 @@ class ThreadSoundDeviceStreamer(SoundDeviceStreamerBase):
     
     def __init__(
         self,
-        samplerate: Optional[AudioSamplerate]=None,
-        channels: Optional[AudioChannels]=None,
-        dtype: Optional[AudioDType]=None,
-        closefd: bool=True,
-        device: Optional[int]=None
+        samplerate: AudioSamplerate | None = None,
+        channels: AudioChannels | None = None,
+        dtype: AudioDType | None = None,
+        closefd: bool = True,
+        device: int | None = None
     ):
         super().__init__(samplerate, channels, dtype, closefd, device)
         self.stream = sd.OutputStream(
@@ -39,12 +39,12 @@ class ThreadSoundDeviceStreamer(SoundDeviceStreamerBase):
     
     def reconfigure(
         self,
-        samplerate: Optional[AudioSamplerate]=None,
-        channels: Optional[AudioChannels]=None,
-        dtype: Optional[AudioDType]=None,
-        device: Optional[int]=None,
+        samplerate: AudioSamplerate | None = None,
+        channels: AudioChannels | None = None,
+        dtype: AudioDType | None = None,
+        device: int | None = None,
         *,
-        restore_state: bool=True
+        restore_state: bool = True
     ) -> None:
         super().reconfigure(samplerate, channels, dtype, device)
         state = self.state
@@ -110,12 +110,12 @@ class AsyncThreadSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
     
     def __init__(
         self,
-        samplerate: Optional[AudioSamplerate]=None,
-        channels: Optional[AudioChannels]=None,
-        dtype: Optional[AudioDType]=None,
-        closefd: bool=True,
-        loop: Optional[AbstractEventLoop]=None,
-        device: Optional[int]=None
+        samplerate: AudioSamplerate | None = None,
+        channels: AudioChannels | None = None,
+        dtype: AudioDType | None = None,
+        closefd: bool = True,
+        loop: AbstractEventLoop | None = None,
+        device: int | None = None
     ) -> None:
         super().__init__(samplerate, channels, dtype, closefd, loop, device)
         self.stream = sd.OutputStream(
@@ -124,7 +124,7 @@ class AsyncThreadSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
             dtype=self.dtype,
             device=self.device
         )
-        self.task: Optional[asyncio.Task] = None
+        self.task: asyncio.Task | None = None
         self.state = StreamerState(StreamerState.LOCKED)
         self.queue: AsyncQueue[np.ndarray] = AsyncQueue(1)
     
@@ -133,10 +133,10 @@ class AsyncThreadSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
     
     def reconfigure(
         self,
-        samplerate: Optional[AudioSamplerate]=None,
-        channels: Optional[AudioChannels]=None,
-        dtype: Optional[AudioDType]=None,
-        device: Optional[int]=None,
+        samplerate: AudioSamplerate | None = None,
+        channels: AudioChannels | None = None,
+        dtype: AudioDType | None = None,
+        device: int | None = None,
         *,
         restore_state: bool=True
     ) -> None:

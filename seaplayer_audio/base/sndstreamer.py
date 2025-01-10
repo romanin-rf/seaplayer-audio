@@ -1,7 +1,7 @@
 from asyncio import AbstractEventLoop
-from typing_extensions import Optional
-from .._types import AudioSamplerate, AudioChannels, AudioDType
-from .streamer import StreamerBase, AsyncStreamerBase
+# > Local Imports
+from seaplayer_audio._types import AudioSamplerate, AudioChannels, AudioDType
+from seaplayer_audio.base.streamer import StreamerBase, AsyncStreamerBase
 
 # ^ SoundDevice Streamer Base
 
@@ -10,20 +10,20 @@ class SoundDeviceStreamerBase(StreamerBase):
     
     def __init__(
         self,
-        samplerate: Optional[AudioSamplerate]=None,
-        channels: Optional[AudioChannels]=None,
-        dtype: Optional[AudioDType]=None,
-        closefd: bool=True,
-        device: Optional[int]=None
+        samplerate: AudioSamplerate | None = None,
+        channels: AudioChannels | None = None,
+        dtype: AudioDType | None = None,
+        closefd: bool = True,
+        device: int | None = None
     ) -> None:
         super().__init__(samplerate, channels, dtype, closefd)
         self.device = device
     
     def reconfigure(self,
-        samplerate: Optional[AudioSamplerate]=None,
-        channels: Optional[AudioChannels]=None,
-        dtype: Optional[AudioDType]=None,
-        device: Optional[int]=None,
+        samplerate: AudioSamplerate | None = None,
+        channels: AudioChannels | None = None,
+        dtype: AudioDType | None = None,
+        device: int | None = None
     ) -> None:
         super().reconfigure(samplerate, channels, dtype)
         self.device = device if (device is not None) else self.device
@@ -35,21 +35,21 @@ class AsyncSoundDeviceStreamerBase(AsyncStreamerBase):
     
     def __init__(
         self,
-        samplerate: Optional[AudioSamplerate]=None,
-        channels: Optional[AudioChannels]=None,
-        dtype: Optional[AudioDType]=None,
-        closefd: bool=True,
-        loop: Optional[AbstractEventLoop]=None,
-        device: Optional[int]=None
+        samplerate: AudioSamplerate | None = None,
+        channels: AudioChannels | None = None,
+        dtype: AudioDType | None = None,
+        closefd: bool = True,
+        loop: AbstractEventLoop | None = None,
+        device: int | None = None
     ) -> None:
         super().__init__(samplerate, channels, dtype, closefd, loop)
         self.device = device
     
     def reconfigure(self,
-        samplerate: Optional[AudioSamplerate]=None,
-        channels: Optional[AudioChannels]=None,
-        dtype: Optional[AudioDType]=None,
-        device: Optional[int]=None,
+        samplerate: AudioSamplerate | None = None,
+        channels: AudioChannels | None = None,
+        dtype: AudioDType | None = None,
+        device: int | None = None
     ) -> None:
         super().reconfigure(samplerate, channels, dtype)
         self.device = device if (device is not None) else self.device

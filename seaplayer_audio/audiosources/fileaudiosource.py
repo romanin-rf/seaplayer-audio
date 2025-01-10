@@ -1,18 +1,19 @@
-import os
 import asyncio
+from pathlib import Path
 from numpy import ndarray
 from soundfile import SoundFile
 from threading import Semaphore
-# * Typing
+from asyncio.locks import Semaphore as AsyncSemaphore
+# > Typing
 from types import TracebackType
-from typing_extensions import Optional, Type
-# * Local Imports
-from ..base import AsyncAudioSourceBase, AudioSourceBase
-from .._types import (
+from typing_extensions import Self, Type
+# > Local Imports
+from seaplayer_audio.base import AsyncAudioSourceBase, AudioSourceBase
+from seaplayer_audio._types import (
     FilePathType,
     AudioDType, AudioSamplerate, AudioChannels, AudioFormat, AudioSubType, AudioEndians
 )
-from ..functions import aiorun, get_audio_metadata, get_mutagen_info
+from seaplayer_audio.functions import aiorun, get_audio_metadata, get_mutagen_info
 
 # ^ File Audio Source (sync)
 
@@ -23,14 +24,14 @@ class FileAudioSource(AudioSourceBase):
     def __init__(
         self,
         filepath: FilePathType,
-        samplerate: Optional[AudioSamplerate]=None,
-        channels: Optional[AudioChannels]=None,
-        subtype:  Optional[AudioSubType]=None,
-        endian: Optional[AudioEndians]=None,
-        format: Optional[AudioFormat]=None,
-        closefd: bool=True
+        samplerate: AudioSamplerate | None = None,
+        channels: AudioChannels | None = None,
+        subtype:  AudioSubType | None = None,
+        endian: AudioEndians | None = None,
+        format: AudioFormat | None = None,
+        closefd: bool = True
     ) -> None:
-        self.name = os.path.abspath(str(filepath))
+        self.name = str(Path(filepath).resolve())
         self.sfio = SoundFile(self.name, 'r', samplerate, channels, subtype, endian, format, closefd=closefd)
         self.semaphore = Semaphore(1)
         self.minfo = get_mutagen_info(self.name)
@@ -39,14 +40,14 @@ class FileAudioSource(AudioSourceBase):
     
     # ^ Magic Methods
     
-    def __enter__(self):
+    def __enter__(self) -> Self:
         return self
     
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType]
+        exc_type: Type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None
     ) -> None:
         if self.closefd:
             self.close()
@@ -92,7 +93,7 @@ class FileAudioSource(AudioSourceBase):
         return self.sfio.format
     
     @property
-    def bitrate(self) -> Optional[int]:
+    def bitrate(self) -> int | None:
         """The speed of the audio stream in the format of bits per second."""
         try:
             if self.minfo.info.bitrate is not None:
@@ -189,34 +190,32 @@ class AsyncFileAudioSource(AsyncAudioSourceBase, FileAudioSource):
     def __init__(
         self,
         filepath: FilePathType,
-        samplerate: Optional[AudioSamplerate]=None,
-        channels: Optional[AudioChannels]=None,
-        subtype:  Optional[AudioSubType]=None,
-        endian: Optional[AudioEndians]=None,
-        format: Optional[AudioFormat]=None,
-        closefd: bool=False,
-        loop: Optional[asyncio.AbstractEventLoop]=None
+        samplerate: AudioSamplerate | None = None,
+        channels: AudioChannels | None = None,
+        subtype:  AudioSubType | None = None,
+        endian: AudioEndians | None = None,
+        format: AudioFormat | None = None,
+        closefd: bool = False,
+        loop: asyncio.AbstractEventLoop | None = None
     ) -> None:
         super().__init__(filepath, samplerate, channels, subtype, endian, format, closefd)
+        self.semaphore = AsyncSemaphore(1)
         if loop is not None:
             self.loop = loop
         else:
             self.loop = asyncio.get_running_loop()
-    
-    def __del__(self) -> None:
-        super().close()
     
     async def __aenter__(self):
         return self
     
     async def __aexit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType]
+        exc_type: Type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None
     ) -> None:
         if self.closefd:
-            await self.close()
+            self.close()
 
     def seekable(self):
         return super().seekable()
@@ -231,25 +230,19 @@ class AsyncFileAudioSource(AsyncAudioSourceBase, FileAudioSource):
         always_2d: bool=False,
         **extra: object
     ) -> ndarray:
-        self.semaphore.acquire()
+        await self.semaphore.acquire()
         result = await aiorun(self.loop, super().read, frames, dtype, always_2d, **extra)
         self.semaphore.release()
         return result
     
     async def readline(self, seconds: float=-1.0, dtype: AudioDType='float32', always_2d: bool=False, **extra) -> ndarray:
-        self.semaphore.acquire()
+        await self.semaphore.acquire()
         result = await aiorun(self.loop, super().readline, seconds, dtype, always_2d, **extra)
         self.semaphore.release()
         return result
 
     async def seek(self, frames: int, whence=0) -> int:
-        self.semaphore.acquire()
+        await self.semaphore.acquire()
         result = await aiorun(self.loop, super().seek, frames, whence)
         self.semaphore.release()
         return result
-    
-    async def tell(self) -> int:
-        return await aiorun(self.loop, super().tell)
-    
-    async def close(self) -> None:
-        return await aiorun(self.loop, super().close)

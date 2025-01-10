@@ -6,13 +6,15 @@ from PIL import Image
 from pathlib import Path
 from soundfile import SoundFile
 from io import BufferedReader, BufferedRandom, BytesIO
+# > Typing
 from typing_extensions import (
     Dict,
     Optional, Union,
     Awaitable, Callable, Coroutine
 )
-from ._types import ResultType, MethodType
-from .base import AudioSourceMetadata
+# > Local Imports
+from seaplayer_audio._types import ResultType
+from seaplayer_audio.base import AudioSourceMetadata
 
 # ! File Works Methods
 
@@ -84,7 +86,7 @@ def _aiorun_callable(
     """Call the callable."""
     return method(*args, **kwargs)
 
-def aiowrap(loop: asyncio.AbstractEventLoop, method: MethodType):
+def aiowrap(loop: asyncio.AbstractEventLoop, method: Awaitable[ResultType] | Callable[..., Coroutine[None, None, ResultType]] | Callable[..., ResultType]):
     if inspect.iscoroutinefunction(method):
         runner = _aiorun_coroutine
     elif inspect.isawaitable(method):
@@ -99,7 +101,7 @@ def aiowrap(loop: asyncio.AbstractEventLoop, method: MethodType):
 
 async def aiorun(
     loop: asyncio.AbstractEventLoop,
-    method: MethodType,
+    method: Awaitable[ResultType] | Callable[..., Coroutine[None, None, ResultType]] | Callable[..., ResultType],
     *args, **kwargs
 ) -> ResultType:
     if inspect.iscoroutinefunction(method):

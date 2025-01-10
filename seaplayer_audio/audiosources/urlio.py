@@ -4,15 +4,13 @@ from io import BufferedRandom, BufferedReader, BytesIO, DEFAULT_BUFFER_SIZE
 from typing_extensions import (
     Iterable,
     Self,
-    Literal, Optional,
+    Literal,
     NoReturn, deprecated
 )
-from .._types import URLOpenRet
+from seaplayer_audio._types import URLOpenRet
 
 # ! URL IO Class
 class URLIO(BufferedReader):
-    # ^ Hidden init methods
-
     def __open_buffer(self, buffer_type: Literal['temp', 'mem']) -> BufferedRandom:
         if buffer_type == 'mem':
             return BytesIO()
@@ -114,7 +112,7 @@ class URLIO(BufferedReader):
     # ^ Main Propertyes
     
     @property
-    def name(self) -> Optional[str]:
+    def name(self) -> str | None:
         return None
     
     @property
@@ -132,7 +130,7 @@ class URLIO(BufferedReader):
     # ^ URL Open Propertyes
     
     @property
-    def length(self) -> Optional[int]:
+    def length(self) -> int | None:
         if hasattr(self.__stream, 'length'):
             if isinstance(self.__stream.length, int):
                 return self.__stream.length
@@ -214,17 +212,17 @@ class URLIO(BufferedReader):
     # ^ IO Methods (NOT IMPLEMENTED)
     
     @deprecated('NOT IMPLEMENTED')
-    def write(self):
+    def write(self) -> NoReturn:
         raise OSError
     
     @deprecated('NOT IMPLEMENTED')
-    def writelines(self, lines: Iterable[bytes], /):
+    def writelines(self, lines: Iterable[bytes], /) -> NoReturn:
         raise OSError
     
     @deprecated('NOT IMPLEMENTED')
-    def fileno(self):
+    def fileno(self) -> NoReturn:
         raise OSError
     
     @deprecated('NOT IMPLEMENTED')
-    def flush(self):
+    def flush(self) -> NoReturn:
         raise NotImplementedError

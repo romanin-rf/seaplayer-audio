@@ -2,12 +2,12 @@ from numpy import ndarray
 from soundfile import SoundFile
 from threading import Semaphore
 # > Typing
-from typing_extensions import Optional, Self
+from typing_extensions import Self
 # > Local Imports
-from .._types import AudioSamplerate, AudioChannels, AudioSubType, AudioFormat, AudioEndians, AudioDType
-from ..base import AudioSourceBase
-from ..functions import get_mutagen_info, get_audio_metadata
-from .urlio import URLIO
+from seaplayer_audio._types import AudioSamplerate, AudioChannels, AudioSubType, AudioFormat, AudioEndians, AudioDType
+from seaplayer_audio.base import AudioSourceBase
+from seaplayer_audio.functions import get_mutagen_info, get_audio_metadata
+from seaplayer_audio.audiosources.urlio import URLIO
 
 # ! URL Audio Source Class
 class URLAudioSource(AudioSourceBase):
@@ -17,13 +17,13 @@ class URLAudioSource(AudioSourceBase):
     def __init__(
         self,
         url: str,
-        samplerate: Optional[AudioSamplerate]=None,
-        channels: Optional[AudioChannels]=None,
-        subtype:  Optional[AudioSubType]=None,
-        endian: Optional[AudioEndians]=None,
-        format: Optional[AudioFormat]=None,
-        closefd: bool=True
-    ):
+        samplerate: AudioSamplerate | None = None,
+        channels: AudioChannels | None = None,
+        subtype:  AudioSubType | None = None,
+        endian: AudioEndians | None = None,
+        format: AudioFormat | None = None,
+        closefd: bool = True
+    ) -> None:
         self.name = None
         self.url = url
         self.urlio = URLIO(url, closefd=closefd)
@@ -83,7 +83,7 @@ class URLAudioSource(AudioSourceBase):
         return self.sfio.format
     
     @property
-    def bitrate(self) -> Optional[int]:
+    def bitrate(self) -> int | None:
         """The speed of the audio stream in the format of bits per second."""
         try:
             if self.minfo.info.bitrate is not None:

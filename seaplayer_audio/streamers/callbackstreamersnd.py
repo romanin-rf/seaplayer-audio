@@ -1,13 +1,13 @@
 import queue
 import asyncio
 import numpy as np
-from enum import Flag, auto
 from queue import Queue
-from asyncio import AbstractEventLoop, Queue as AsyncQueue
 from numpy import ndarray
+from enum import Flag, auto
 from sounddevice import OutputStream, CallbackFlags
+from asyncio import AbstractEventLoop, Queue as AsyncQueue
 # > Typing
-from typing_extensions import Any, Optional, NoReturn, Callable, deprecated
+from typing_extensions import Any, NoReturn, Callable, deprecated
 # > Local Imports
 from seaplayer_audio._types import AudioSamplerate, AudioChannels, AudioDType, SoundDeviceStreamerLatency
 from seaplayer_audio.base import AsyncSoundDeviceStreamerBase, SoundDeviceStreamerBase, StreamerState
@@ -24,19 +24,19 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
     
     def __init__(
         self,
-        samplerate: Optional[AudioSamplerate]=None,
-        channels: Optional[AudioChannels]=None,
-        dtype: Optional[AudioDType]=None,
-        latency: Optional[SoundDeviceStreamerLatency]=None,
-        closefd: bool=True,
-        device: Optional[int]=None,
-        callback: Optional[Callable[[ndarray, int, Any, CallbackFlags], None]]=None,
-        flag: Optional[CallbackSettingsFlag]=None
+        samplerate: AudioSamplerate | None = None,
+        channels: AudioChannels | None = None,
+        dtype: AudioDType | None = None,
+        latency: SoundDeviceStreamerLatency | None = None,
+        closefd: bool = True,
+        device: int | None = None,
+        callback: Callable[[ndarray, int, Any, CallbackFlags], None] | None = None,
+        flag: CallbackSettingsFlag | None = None
     ) -> None:
         super().__init__(samplerate, channels, dtype, closefd, device)
         self.latency = latency
         self.queue: Queue[ndarray] = Queue(1)
-        self.buffer: Optional[ndarray] = None
+        self.buffer: ndarray | None = None
         self.callback = callback if (callback is not None) else self.__callback__
         self.flag = flag if (flag is not None) else CallbackSettingsFlag(0)
         self.stream = OutputStream(
@@ -103,14 +103,14 @@ class CallbackSoundDeviceStreamer(SoundDeviceStreamerBase):
     
     def reconfigure(
         self,
-        samplerate: Optional[AudioSamplerate]=None,
-        channels: Optional[AudioChannels]=None,
-        dtype: Optional[AudioDType]=None,
-        latency: Optional[SoundDeviceStreamerLatency]=None,
-        device: Optional[int]=None,
-        callback: Optional[Callable[[ndarray, int, Any, CallbackFlags], None]]=None,
+        samplerate: AudioSamplerate | None = None,
+        channels: AudioChannels | None = None,
+        dtype: AudioDType | None = None,
+        latency: SoundDeviceStreamerLatency | None = None,
+        device: int | None = None,
+        callback: Callable[[ndarray, int, Any, CallbackFlags], None] | None = None,
         *,
-        restore_state: bool=True
+        restore_state: bool = True
     ) -> None:
         super().reconfigure(samplerate, channels, dtype, device)
         self.latency = latency if (latency is not None) else self.latency
@@ -166,20 +166,20 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
     
     def __init__(
         self,
-        samplerate: Optional[AudioSamplerate]=None,
-        channels: Optional[AudioChannels]=None,
-        dtype: Optional[AudioDType]=None,
-        latency: Optional[SoundDeviceStreamerLatency]=None,
-        closefd: bool=True,
-        loop: Optional[AbstractEventLoop]=None,
-        device: Optional[int]=None,
-        callback: Optional[Callable[[ndarray, int, Any, CallbackFlags], None]]=None,
-        flag: Optional[CallbackSettingsFlag]=None
+        samplerate: AudioSamplerate | None = None,
+        channels: AudioChannels | None = None,
+        dtype: AudioDType | None = None,
+        latency: SoundDeviceStreamerLatency | None = None,
+        closefd: bool = True,
+        loop: AbstractEventLoop | None = None,
+        device: int | None = None,
+        callback: Callable[[ndarray, int, Any, CallbackFlags], None] | None = None,
+        flag: CallbackSettingsFlag | None = None,
     ):
         super().__init__(samplerate, channels, dtype, closefd, loop, device)
         self.latency = latency
         self.queue: AsyncQueue[ndarray] = AsyncQueue(1)
-        self.buffer: Optional[ndarray] = None
+        self.buffer: ndarray | None = None
         self.callback = callback if (callback is not None) else self.__callback__
         self.flag = flag if (flag is not None) else CallbackSettingsFlag(0)
         self.stream = OutputStream(
@@ -245,14 +245,14 @@ class AsyncCallbackSoundDeviceStreamer(AsyncSoundDeviceStreamerBase):
     
     def reconfigure(
         self,
-        samplerate: Optional[AudioSamplerate]=None,
-        channels: Optional[AudioChannels]=None,
-        dtype: Optional[AudioDType]=None,
-        latency: Optional[SoundDeviceStreamerLatency]=None,
-        device: Optional[int]=None,
-        callback: Optional[Callable[[ndarray, int, Any, CallbackFlags], None]]=None,
+        samplerate: AudioSamplerate | None = None,
+        channels: AudioChannels | None = None,
+        dtype: AudioDType | None = None,
+        latency: SoundDeviceStreamerLatency | None = None,
+        device: int | None = None,
+        callback: Callable[[ndarray, int, Any, CallbackFlags], None] | None = None,
         *,
-        restore_state: bool=True
+        restore_state: bool = True
     ) -> None:
         super().reconfigure(samplerate, channels, dtype, device)
         self.latency = latency if (latency is not None) else self.latency

@@ -1,4 +1,3 @@
-from numpy import ndarray
 from enum import IntEnum
 from multiprocessing.connection import PipeConnection
 # > Typing
@@ -6,7 +5,7 @@ from typing_extensions import (
     Any,
     Literal,
     NamedTuple, TypedDict,
-    Generic, TypeVar, TypeAlias, overload
+    Generic, TypeVar, TypeAlias
 )
 # > Local Imports
 from seaplayer_audio._types import AudioSamplerate, AudioChannels, AudioDType

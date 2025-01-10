@@ -13,7 +13,6 @@ console = Console()
 # ! Main
 def main():
     readed = 0
-    console.print(f"{mp.current_process()=!r}")
     with seapa.FileAudioSource(PATH) as source:
         with seapa.MPSoundDeviceStreamer() as streamer:
             while len(data := source.readline(1)) > 0:

@@ -2,8 +2,10 @@ import datetime
 from PIL import Image
 from io import IOBase
 from dataclasses import dataclass
-from typing_extensions import Any, Iterable, Optional, NoReturn, deprecated
-from .._types import (
+# > Typing
+from typing_extensions import Any, Iterable, NoReturn, deprecated
+# > Local Imports
+from seaplayer_audio._types import (
     AudioSamplerate, AudioChannels, AudioSubType, AudioEndians, AudioFormat,
     Reprable
 )
@@ -12,15 +14,15 @@ from .._types import (
 
 @dataclass(frozen=True)
 class AudioSourceMetadata:
-    title: Optional[str]=None
-    artist: Optional[str]=None
-    album: Optional[str]=None
-    tracknumber: Optional[str]=None
-    date: Optional[datetime.datetime]=None
-    genre: Optional[str]=None
-    copyright: Optional[str]=None
-    software: Optional[str]=None
-    icon: Optional[Image.Image]=None
+    title: str | None = None
+    artist: str | None = None
+    album: str | None = None
+    tracknumber: str | None = None
+    date: datetime.datetime | None = None
+    genre: str | None = None
+    copyright: str | None = None
+    software: str | None = None
+    icon: Image.Image | None = None
 
 # ! Audio Source Class (sync)
 
@@ -65,7 +67,7 @@ class AudioSourceBase(IOBase, Reprable):
         raise OSError
     
     @deprecated('NOT IMPLEMENTED')
-    def truncate(self, size: Optional[int]=None) -> NoReturn:
+    def truncate(self, size: ... = ...) -> NoReturn:
         """NOT IMPLEMENTED"""
         raise NotImplementedError
     
@@ -111,7 +113,7 @@ class AsyncAudioSourceBase(AudioSourceBase):
         raise OSError
     
     @deprecated('NOT IMPLEMENTED')
-    async def truncate(self, size = ...) -> NoReturn:
+    async def truncate(self, size: ... = ...) -> NoReturn:
         """NOT IMPLEMENTED"""
         raise NotImplementedError
     

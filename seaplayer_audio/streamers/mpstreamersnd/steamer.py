@@ -30,16 +30,16 @@ class MPSoundDeviceStreamer(SoundDeviceStreamerBase):
         closefd: bool=True,
         device: Optional[int]=None,
         *,
-        run_loop: Optional[Callable[[Self, StreamerAPI], Any]]=None
+        loop_target: Optional[Callable[[Self, StreamerAPI], Any]]=None
     ) -> None:
         super().__init__(samplerate, channels, dtype, closefd, device)
-        self.run_loop = run_loop if (run_loop is not None) else self.run
+        self.loop_target = loop_target if (loop_target is not None) else self.run
         self.parent_pipe, self.child_pipe = Pipe()
         self.queue: queue.Queue[PacketTypes] = queue.Queue(1)
         self.api = StreamerAPI(self.parent_pipe)
-        self.thread = Thread(target=self.run_loop, args=(self, self.api,))
+        self.thread = Thread(target=self.loop_target, args=(self, self.api,), daemon=True)
         self.process = Process(name=f'<{self.__class__.__name__} from {hex(id(self))}>', target=__process__, args=(self.child_pipe,))
-
+    
     def is_busy(self) -> bool:
         return self.queue.qsize() >= self.queue.maxsize
     

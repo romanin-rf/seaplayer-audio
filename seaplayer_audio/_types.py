@@ -1,25 +1,20 @@
 import numpy as np
-from pathlib import Path
-from email.message import Message
-from io import BufferedReader
-from http.client import HTTPResponse
 from numpy import ndarray
+from io import BufferedReader
+from email.message import Message
+from http.client import HTTPResponse
+from pathlib import Path, PurePath, PosixPath, PurePosixPath, PureWindowsPath, WindowsPath
 # > Typing
 from typing_extensions import (
-    Tuple, Any,
-    Coroutine, Awaitable, Callable,
-    Literal, Optional, Union,
+    Any, Tuple,
+    Literal,
     TypeVar, TypeAlias
 )
 
 # ! Async Types
 
 ResultType = TypeVar('ResultType')
-MethodType: TypeAlias = Union[
-    Awaitable[ResultType],
-    Callable[..., Coroutine[None, None, ResultType]],
-    Callable[..., ResultType]
-]
+#MethodType: TypeAlias = Awaitable[ResultType] | Callable[..., Coroutine[None, None, ResultType]] | Callable[..., ResultType]
 
 # ! Types
 
@@ -30,11 +25,11 @@ DType: TypeAlias = Literal[
 
 # ! Numpy Types
 
-SupportNDArray = ndarray[Any, Union[np.int16, np.int32, np.float32, np.float64]]
+SupportNDArray: TypeAlias = ndarray[Any, np.int16 | np.int32 | np.float32 | np.float64]
 
 # ! IO Types
 
-FilePathType: TypeAlias     = Union[str, Path]
+FilePathType: TypeAlias = str | bytes | Path | PurePath | PosixPath | PurePosixPath | PureWindowsPath | WindowsPath
 
 # ! Audio Types
 
@@ -86,8 +81,8 @@ class Reprable:
 # ! URL Open Types
 
 class URLOpenRetType:
-    code: Optional[Any]
-    status: Optional[Any]
+    code: Any | None
+    status: Any | None
     headers: Message
     file: BufferedReader
     fp: BufferedReader

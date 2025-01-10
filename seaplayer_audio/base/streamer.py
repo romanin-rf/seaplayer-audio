@@ -1,9 +1,11 @@
 import asyncio
 from asyncio import AbstractEventLoop
 from enum import Flag, auto
+# > Typing
 from types import TracebackType
-from typing_extensions import Optional, Type
-from .._types import AudioSamplerate, AudioChannels, AudioDType, Reprable
+from typing_extensions import Type
+# > Local Imports
+from seaplayer_audio._types import AudioSamplerate, AudioChannels, AudioDType, Reprable
 
 # ^ Streamer State Class
 
@@ -18,14 +20,14 @@ class StreamerState(Flag):
 class StreamerBase(Reprable):
     __steamer_type__: str  = 'base'
     
-    __repr_attrs__          = ('samplerate', 'channels', 'dtype', 'state', 'closefd')
+    __repr_attrs__ = ('samplerate', 'channels', 'dtype', 'state', 'closefd')
     
     def __init__(
         self,
-        samplerate: Optional[AudioSamplerate]=None,
-        channels: Optional[AudioChannels]=None,
-        dtype: Optional[AudioDType]=None,
-        closefd: bool=True
+        samplerate: AudioSamplerate | None = None,
+        channels: AudioChannels | None = None,
+        dtype: AudioDType | None = None,
+        closefd: bool = True
     ) -> None:
         self.samplerate = samplerate or 44100
         self.channels = channels or 2
@@ -39,9 +41,9 @@ class StreamerBase(Reprable):
     
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType]
+        exc_type: Type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None
     ):
         if self.closefd:
             self.set_lock(True)
@@ -58,9 +60,9 @@ class StreamerBase(Reprable):
         return False
     
     def reconfigure(self, 
-        samplerate: Optional[AudioSamplerate]=None,
-        channels: Optional[AudioChannels]=None,
-        dtype: Optional[AudioDType]=None,
+        samplerate: AudioSamplerate | None = None,
+        channels: AudioChannels | None = None,
+        dtype: AudioDType | None = None
     ) -> None:
         self.samplerate = samplerate if (samplerate is not None) else self.samplerate
         self.channels = channels if (channels is not None) else self.channels
@@ -90,11 +92,11 @@ class AsyncStreamerBase(StreamerBase):
     
     def __init__(
         self,
-        samplerate: Optional[AudioSamplerate]=None,
-        channels: Optional[AudioChannels]=None,
-        dtype: Optional[AudioDType]=None,
-        closefd: bool=True,
-        loop: Optional[AbstractEventLoop]=None
+        samplerate: AudioSamplerate | None = None,
+        channels: AudioChannels | None = None,
+        dtype: AudioDType | None = None,
+        closefd: bool = True,
+        loop: AbstractEventLoop | None = None
     ) -> None:
         super().__init__(samplerate, channels, dtype, closefd)
         if loop is not None:
@@ -107,9 +109,9 @@ class AsyncStreamerBase(StreamerBase):
     
     def __exit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType]
+        exc_type: Type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None
     ):
         raise NotImplementedError
     
@@ -119,9 +121,9 @@ class AsyncStreamerBase(StreamerBase):
     
     async def __aexit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_val: Optional[BaseException],
-        exc_tb: Optional[TracebackType]
+        exc_type: Type[BaseException] | None,
+        exc_val: BaseException | None,
+        exc_tb: TracebackType | None
     ):
         if self.closefd:
             await self.set_lock(True)

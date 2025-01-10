@@ -15,7 +15,8 @@ It is based on the [sounddevice](https://github.com/spatialaudio/python-sounddev
 #### Through context manager
 ```python
 import time
-from seaplayer_audio import CallbackSoundDeviceStreamer, FileAudioSource
+from seaplayer_audio.audiosources import FileAudioSource
+from seaplayer_audio.streamers import CallbackSoundDeviceStreamer
 
 
 def main():
@@ -23,7 +24,6 @@ def main():
         with CallbackSoundDeviceStreamer() as streamer:
             while len(data := source.readline(1)) > 0:
                 streamer.send( data )
-                time.sleep(0.01) # Optional
 
 
 if __name__ == '__main__':
@@ -33,7 +33,8 @@ if __name__ == '__main__':
 #### Through cycle
 ```python
 import time
-from seaplayer_audio import CallbackSoundDeviceStreamer, FileAudioSource
+from seaplayer_audio.audiosources import FileAudioSource
+from seaplayer_audio.streamers import CallbackSoundDeviceStreamer
 
 
 def main():
@@ -42,7 +43,6 @@ def main():
     streamer.start()
     while len(data := source.readline(1)) > 0:
         streamer.send( data )
-        time.sleep(0.01) # Optional
     streamer.stop()
     file.close()
 
@@ -56,7 +56,8 @@ if __name__ == '__main__':
 #### Through context manager
 ```python
 import asyncio
-from seaplayer_audio import AsyncCallbackSoundDeviceStreamer, AsyncFileAudioSource
+from seaplayer_audio.audiosources import AsyncFileAudioSource
+from seaplayer_audio.streamers import AsyncCallbackSoundDeviceStreamer
 
 
 async def main():
@@ -64,7 +65,6 @@ async def main():
         async with AsyncCallbackSoundDeviceStreamer() as streamer:
             while len(data := await source.readline(1)) > 0:
                 await streamer.send( data )
-                await asyncio.sleep(0.01) # Optional
 
 
 if __name__ == '__main__':
@@ -74,18 +74,18 @@ if __name__ == '__main__':
 #### Through cycle
 ```python
 import asyncio
-from seaplayer_audio import AsyncCallbackSoundDeviceStreamer, AsyncFileAudioSource
+from seaplayer_audio.audiosources import AsyncFileAudioSource
+from seaplayer_audio.streamers import AsyncCallbackSoundDeviceStreamer
 
 
 async def main():
-    file = FileAudioSource('example.mp3')
-    streamer = CallbackSoundDeviceStreamer()
+    file = AsyncFileAudioSource('example.mp3')
+    streamer = AsyncCallbackSoundDeviceStreamer()
     await streamer.start()
     while len(data := await source.readline(1)) > 0:
         await streamer.send( data )
-        await asyncio.sleep(0.01) # Optional
     await streamer.stop()
-    await file.close()
+    file.close()
 
 
 if __name__ == '__main__':
